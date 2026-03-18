@@ -10,10 +10,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // ============================================
-// API helpers para cada tabla
+// API helpers para cada tabla (con soporte de equipos)
 // ============================================
 
 export const db = {
+  // --- Equipo ---
+  async getEquipo() {
+    const { data, error } = await supabase.from('equipo_miembros').select('equipo_id, rol, equipos(id, nombre)').limit(1).single()
+    if (error) return null
+    return data
+  },
+
+  async getEquipoId() {
+    const equipo = await this.getEquipo()
+    return equipo?.equipo_id || null
+  },
+
+  async getUserAndEquipo() {
+    const { data: { user } } = await supabase.auth.getUser()
+    const equipoId = await this.getEquipoId()
+    return { user, equipoId }
+  },
+
   // --- Clientes ---
   async getClientes() {
     const { data, error } = await supabase.from('clientes').select('*').order('nombre')
@@ -21,8 +39,8 @@ export const db = {
     return data
   },
   async addCliente(cliente) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('clientes').insert({ ...cliente, user_id: user.id }).select().single()
+    const { user, equipoId } = await this.getUserAndEquipo()
+    const { data, error } = await supabase.from('clientes').insert({ ...cliente, user_id: user.id, equipo_id: equipoId }).select().single()
     if (error) throw error
     return data
   },
@@ -43,8 +61,8 @@ export const db = {
     return data
   },
   async addExpediente(exp) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('expedientes').insert({ ...exp, user_id: user.id }).select().single()
+    const { user, equipoId } = await this.getUserAndEquipo()
+    const { data, error } = await supabase.from('expedientes').insert({ ...exp, user_id: user.id, equipo_id: equipoId }).select().single()
     if (error) throw error
     return data
   },
@@ -70,8 +88,8 @@ export const db = {
     return data
   },
   async addActuacion(act) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('actuaciones').insert({ ...act, user_id: user.id }).select().single()
+    const { user, equipoId } = await this.getUserAndEquipo()
+    const { data, error } = await supabase.from('actuaciones').insert({ ...act, user_id: user.id, equipo_id: equipoId }).select().single()
     if (error) throw error
     return data
   },
@@ -92,8 +110,8 @@ export const db = {
     return data
   },
   async addDocumento(doc) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('documentos_cliente').insert({ ...doc, user_id: user.id }).select().single()
+    const { user, equipoId } = await this.getUserAndEquipo()
+    const { data, error } = await supabase.from('documentos_cliente').insert({ ...doc, user_id: user.id, equipo_id: equipoId }).select().single()
     if (error) throw error
     return data
   },
@@ -109,8 +127,8 @@ export const db = {
     return data
   },
   async addCobro(cobro) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('cobros').insert({ ...cobro, user_id: user.id }).select().single()
+    const { user, equipoId } = await this.getUserAndEquipo()
+    const { data, error } = await supabase.from('cobros').insert({ ...cobro, user_id: user.id, equipo_id: equipoId }).select().single()
     if (error) throw error
     return data
   },
@@ -131,9 +149,10 @@ export const db = {
     return data
   },
   async addActividad(texto, tipo = 'general', referenciaId = null) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user, equipoId } = await this.getUserAndEquipo()
     await supabase.from('actividad').insert({
       user_id: user.id,
+      equipo_id: equipoId,
       fecha: new Date().toISOString().slice(0, 10),
       texto, tipo,
       referencia_id: referenciaId
