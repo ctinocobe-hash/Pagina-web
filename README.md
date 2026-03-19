@@ -134,4 +134,4 @@ despacho-legal/
 
 ## Soporte
 
-Si necesitas ayuda con la configuración, puedes preguntarme directamente en Claude.
+Si necesitas ayuda con la configuración, puedes preguntarme directamente en Claude. 
