@@ -9,10 +9,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// ============================================
-// API helpers para cada tabla (con soporte de equipos)
-// ============================================
-
 export const db = {
   // --- Equipo ---
   async getEquipo() {
@@ -20,16 +16,27 @@ export const db = {
     if (error) return null
     return data
   },
-
   async getEquipoId() {
     const equipo = await this.getEquipo()
     return equipo?.equipo_id || null
   },
-
   async getUserAndEquipo() {
     const { data: { user } } = await supabase.auth.getUser()
     const equipoId = await this.getEquipoId()
     return { user, equipoId }
+  },
+
+  // --- Detect user type ---
+  async getUserType() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { type: null, user: null }
+    // Check if admin/team member
+    const { data: team } = await supabase.from('equipo_miembros').select('equipo_id, rol').eq('user_id', user.id).limit(1).single()
+    if (team) return { type: 'admin', user, equipo_id: team.equipo_id, rol: team.rol }
+    // Check if portal client
+    const { data: portal } = await supabase.from('portal_clientes').select('id, cliente_id, equipo_id, activo').eq('user_id', user.id).limit(1).single()
+    if (portal && portal.activo) return { type: 'portal', user, cliente_id: portal.cliente_id, equipo_id: portal.equipo_id }
+    return { type: 'unknown', user }
   },
 
   // --- Clientes ---
@@ -93,6 +100,11 @@ export const db = {
     if (error) throw error
     return data
   },
+  async updateActuacion(id, updates) {
+    const { data, error } = await supabase.from('actuaciones').update(updates).eq('id', id).select().single()
+    if (error) throw error
+    return data
+  },
   async deleteActuacion(id) {
     const { error } = await supabase.from('actuaciones').delete().eq('id', id)
     if (error) throw error
@@ -112,6 +124,11 @@ export const db = {
   async addDocumento(doc) {
     const { user, equipoId } = await this.getUserAndEquipo()
     const { data, error } = await supabase.from('documentos_cliente').insert({ ...doc, user_id: user.id, equipo_id: equipoId }).select().single()
+    if (error) throw error
+    return data
+  },
+  async updateDocumento(id, updates) {
+    const { data, error } = await supabase.from('documentos_cliente').update(updates).eq('id', id).select().single()
     if (error) throw error
     return data
   },
@@ -151,11 +168,115 @@ export const db = {
   async addActividad(texto, tipo = 'general', referenciaId = null) {
     const { user, equipoId } = await this.getUserAndEquipo()
     await supabase.from('actividad').insert({
-      user_id: user.id,
-      equipo_id: equipoId,
+      user_id: user.id, equipo_id: equipoId,
       fecha: new Date().toISOString().slice(0, 10),
-      texto, tipo,
-      referencia_id: referenciaId
+      texto, tipo, referencia_id: referenciaId
     })
+  },
+
+  // ============================================
+  // PORTAL DE CLIENTES
+  // ============================================
+
+  // Create a portal account for a client
+  async createPortalAccount(email, password, clienteId) {
+    const { user, equipoId } = await this.getUserAndEquipo()
+    // Create the auth user
+    const { data: authData, error: authError } = await supabase.auth.admin
+      ? await supabase.auth.admin.createUser({ email, password, email_confirm: true })
+      : await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+          body: JSON.stringify({ email, password })
+        }).then(r => r.json())
+
+    const newUserId = authData?.user?.id || authData?.id
+    if (!newUserId) throw new Error('Error creando usuario: ' + JSON.stringify(authData))
+
+    // Link to portal_clientes
+    const { data, error } = await supabase.from('portal_clientes').insert({
+      user_id: newUserId, cliente_id: clienteId, equipo_id: equipoId, activo: true
+    }).select().single()
+    if (error) throw error
+
+    await this.addActividad(`Portal activado para cliente`, 'cliente', clienteId)
+    return data
+  },
+
+  // Simple portal account creation via signup
+  async createPortalAccountSimple(email, password, clienteId) {
+    const equipoId = await this.getEquipoId()
+    // Use signup endpoint
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, password, options: { data: { tipo: 'portal' } } })
+    })
+    const authData = await res.json()
+    const newUserId = authData?.user?.id || authData?.id
+    if (!newUserId) throw new Error('Error creando cuenta')
+
+    // Confirm email automatically via SQL
+    await supabase.rpc('confirm_portal_user', { user_email: email }).catch(() => {})
+
+    // Link to portal_clientes
+    const { data, error } = await supabase.from('portal_clientes').insert({
+      user_id: newUserId, cliente_id: clienteId, equipo_id: equipoId, activo: true
+    }).select().single()
+    if (error) throw error
+
+    await this.addActividad(`Portal activado para cliente`, 'cliente', clienteId)
+    return { ...data, newUserId }
+  },
+
+  // Get all portal client links
+  async getPortalClientes() {
+    const { data, error } = await supabase.from('portal_clientes').select('*').order('created_at', { ascending: false })
+    if (error) throw error
+    return data
+  },
+
+  // Toggle portal client active status
+  async togglePortalCliente(id, activo) {
+    const { data, error } = await supabase.from('portal_clientes').update({ activo }).eq('id', id).select().single()
+    if (error) throw error
+    return data
+  },
+
+  // Delete portal client link
+  async deletePortalCliente(id) {
+    const { error } = await supabase.from('portal_clientes').delete().eq('id', id)
+    if (error) throw error
+  },
+
+  // --- Portal client data fetching ---
+  async getPortalExpedientes(clienteId) {
+    const { data, error } = await supabase.from('expedientes').select('*').eq('cliente_id', clienteId).order('created_at', { ascending: false })
+    if (error) throw error
+    return data
+  },
+
+  async getPortalActuaciones(expedienteId) {
+    const { data, error } = await supabase.from('actuaciones').select('*').eq('expediente_id', expedienteId).eq('visible_portal', true).order('fecha', { ascending: false })
+    if (error) throw error
+    return data
+  },
+
+  async getPortalDocumentos(clienteId) {
+    const { data, error } = await supabase.from('documentos_cliente').select('*').eq('cliente_id', clienteId).eq('visible_portal', true).order('fecha', { ascending: false })
+    if (error) throw error
+    return data
+  },
+
+  async getPortalCobros(clienteId) {
+    const { data, error } = await supabase.from('cobros').select('*').eq('cliente_id', clienteId).eq('visible_portal', true).order('fecha_vencimiento')
+    if (error) throw error
+    return data
+  },
+
+  async getPortalClienteInfo(clienteId) {
+    const { data, error } = await supabase.from('clientes').select('*').eq('id', clienteId).single()
+    if (error) throw error
+    return data
   },
 }
