@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { supabase, db } from './lib/supabase'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
-import Portal from './pages/Portal'
+import Portal from './pages/portal'
 
 function App() {
   const [session, setSession] = useState(null)
