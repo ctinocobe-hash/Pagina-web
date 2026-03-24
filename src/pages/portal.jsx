@@ -35,8 +35,8 @@ const daysUntil = (d) => Math.ceil((new Date(d) - new Date()) / 86400000)
 const LogoIcon = ({ size = 28, color = GOLD }) => (
   <svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round">
     <line x1="32" y1="13" x2="32" y2="50" strokeWidth="2.5"/><line x1="14" y1="18" x2="50" y2="18" strokeWidth="2.5"/>
-    <circle cx="14" cy="18" r="2.5" strokeWidth="2.2" fill="none"/><line x1="14" y1="20.5" x2="14" y2="32" strokeWidth="2"/>
-    <path d="M8 32 L14 32 L20 32" strokeWidth="2.5"/><circle cx="50" cy="18" r="2.5" strokeWidth="2.2" fill="none"/>
+    <circle cx="14" cy="18" r="2.5" strokeWidth="2.2" fill={color}/><line x1="14" y1="20.5" x2="14" y2="32" strokeWidth="2"/>
+    <path d="M8 32 L14 32 L20 32" strokeWidth="2.5"/><circle cx="50" cy="18" r="2.5" strokeWidth="2.2" fill={color}/>
     <line x1="50" y1="20.5" x2="50" y2="32" strokeWidth="2"/><path d="M44 32 L50 32 L56 32" strokeWidth="2.5"/>
     <line x1="26" y1="50" x2="38" y2="50" strokeWidth="2.5"/>
   </svg>

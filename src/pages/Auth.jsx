@@ -7,8 +7,8 @@ const FT = "'Cormorant Garamond', serif", FB = "'Source Serif 4', serif"
 const LogoIcon = ({ size = 48, color = GOLD }) => (
   <svg width={size} height={size} viewBox="0 0 96 76" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round">
     <line x1="48" y1="0" x2="48" y2="64" strokeWidth="3.2"/><line x1="12" y1="10" x2="84" y2="10" strokeWidth="3.2"/>
-    <circle cx="12" cy="10" r="4" strokeWidth="2.8" fill="none"/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/>
-    <line x1="0" y1="32" x2="24" y2="32" strokeWidth="3.2"/><circle cx="84" cy="10" r="4" strokeWidth="2.8" fill="none"/>
+    <circle cx="12" cy="10" r="4" strokeWidth="2.8" fill={color}/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/>
+    <line x1="0" y1="32" x2="24" y2="32" strokeWidth="3.2"/><circle cx="84" cy="10" r="4" strokeWidth="2.8" fill={color}/>
     <line x1="84" y1="14" x2="84" y2="32" strokeWidth="2.6"/><line x1="72" y1="32" x2="96" y2="32" strokeWidth="3.2"/>
     <line x1="36" y1="64" x2="60" y2="64" strokeWidth="3.2"/>
   </svg>
