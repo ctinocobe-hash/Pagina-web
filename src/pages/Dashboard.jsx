@@ -554,11 +554,11 @@ export default function Dashboard({ session }) {
     </Card>
   }
 
-  const sections_map = {dashboard:renderDashboard,expedientes:renderExpedientes,clientes:renderClientes,vencimientos:renderVencimientos,cobranza:renderCobranza,portal:renderPortal}
-  const titles = {dashboard:"Dashboard",expedientes:"Expedientes",clientes:"Clientes",vencimientos:"Vencimientos",cobranza:"Cobranza",portal:"Portal de Clientes"}
+  const sections_map = {dashboard:renderDashboard,expedientes:renderExpedientes,clientes:renderClientes,vencimientos:renderVencimientos,cobranza:renderCobranza}
+  const titles = {dashboard:"Dashboard",expedientes:"Expedientes",clientes:"Clientes",vencimientos:"Vencimientos",cobranza:"Cobranza"}
   const navItems = [
     {key:"dashboard",label:"Dashboard",icon:IC.Dashboard},{key:"expedientes",label:"Expedientes",icon:IC.Folder},{key:"clientes",label:"Clientes",icon:IC.Users},
-    {key:"vencimientos",label:"Vencimientos",icon:IC.Calendar},{key:"cobranza",label:"Cobranza",icon:IC.Dollar},{key:"portal",label:"Portal",icon:IC.Portal},
+    {key:"vencimientos",label:"Vencimientos",icon:IC.Calendar},{key:"cobranza",label:"Cobranza",icon:IC.Dollar},
   ]
 
   const renderContent = () => {
