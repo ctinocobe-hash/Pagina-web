@@ -48,6 +48,7 @@ const IC = {
   Logout:()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   Eye:()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
   EyeOff:()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
+  Edit:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   Logo:({s=28,c=GOLD})=><svg width={s} height={s} viewBox="0 0 96 76" fill="none" stroke={c} strokeLinecap="round" strokeLinejoin="round"><line x1="48" y1="0" x2="48" y2="64" strokeWidth="3.2"/><line x1="12" y1="10" x2="84" y2="10" strokeWidth="3.2"/><circle cx="12" cy="10" r="4" strokeWidth="2.8" fill="none"/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/><line x1="0" y1="32" x2="24" y2="32" strokeWidth="3.2"/><circle cx="84" cy="10" r="4" strokeWidth="2.8" fill="none"/><line x1="84" y1="14" x2="84" y2="32" strokeWidth="2.6"/><line x1="72" y1="32" x2="96" y2="32" strokeWidth="3.2"/><line x1="36" y1="64" x2="60" y2="64" strokeWidth="3.2"/></svg>,
 }
 
@@ -103,6 +104,7 @@ export default function Dashboard({ session }) {
   const handleDelAct = async (id) => { await db.deleteActuacion(id); loadData() }
   const handleDelDoc = async (id) => { await db.deleteDocumento(id); loadData() }
   const handleUpdCobro = async (id, estado) => { await db.updateCobro(id, { estado }); loadData() }
+  const handleUpdateExpediente = async (id, f) => { await db.updateExpediente(id, f); await db.addActividad(`Expediente actualizado: ${f.numero}`,'expediente',id); setSubModal(null); loadData() }
   const handleToggleVisAct = async (id, current) => { await db.updateActuacion(id, { visible_portal: !current }); loadData() }
   const handleToggleVisDoc = async (id, current) => { await db.updateDocumento(id, { visible_portal: !current }); loadData() }
   const handleLogout = async () => { await supabase.auth.signOut() }
@@ -148,6 +150,7 @@ export default function Dashboard({ session }) {
   const Card = ({children,style:sx={}}) => <div style={{background:"rgba(184,150,62,0.03)",border:"1px solid rgba(184,150,62,0.08)",borderRadius:14,padding:18,position:"relative",...sx}}>{children}</div>
   const CardTitle = ({children}) => <div style={{fontSize:12,fontWeight:700,color:GOLD,marginBottom:10,display:"flex",alignItems:"center",gap:6,textTransform:"uppercase",letterSpacing:.8}}>{children}</div>
   const DelBtn = ({onClick}) => <button onClick={onClick} style={{background:"none",border:"none",color:"rgba(239,154,154,0.5)",cursor:"pointer",padding:2}}><IC.Trash /></button>
+  const EditBtn = ({onClick}) => <button onClick={onClick} style={{background:"none",border:"none",color:"rgba(184,150,62,0.6)",cursor:"pointer",padding:2}}><IC.Edit /></button>
 
   // Visibility toggle button
   const VisToggle = ({visible, onClick}) => (
@@ -183,6 +186,32 @@ export default function Dashboard({ session }) {
       <Btn onClick={()=>f.numero&&f.cliente_id?handleAddExpediente(f):null}>Guardar</Btn>
     </>
   }
+  const ExpEditForm = ({exp}) => {
+    const [f,sF]=useState({
+      numero:exp.numero||"",tipo:exp.tipo||"",materia:exp.materia||"Administrativa",
+      cliente_id:exp.cliente_id||"",juzgado:exp.juzgado||"",estado:exp.estado||"En trámite",
+      urgente:exp.urgente||false,fecha_inicio:exp.fecha_inicio||today,
+      proximo_plazo:exp.proximo_plazo||"",notas:exp.notas||"",notas_cliente:exp.notas_cliente||"",
+      expediente_padre_id:exp.expediente_padre_id||null,relacion:exp.relacion||""
+    })
+    const u=(k,v)=>sF({...f,[k]:v})
+    return <>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>u("materia",e.target.value)}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
+      <Input label="Tipo de juicio" value={f.tipo} onChange={e=>u("tipo",e.target.value)} />
+      <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
+      <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Etapa / Estado" value={f.estado} onChange={e=>u("estado",e.target.value)}>{estadosProc.map(s=><option key={s}>{s}</option>)}</Sel><Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} /></div>
+      <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",e.target.value)} />
+      <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",e.target.value)} />
+      <Card style={{marginBottom:14}}><CardTitle><IC.Link /> Vincular expediente padre</CardTitle>
+        <Sel label="Exp. padre" value={f.expediente_padre_id||""} onChange={e=>u("expediente_padre_id",e.target.value||null)}><option value="">Ninguno</option>{expedientes.filter(x=>x.id!==exp.id).map(x=><option key={x.id} value={x.id}>{x.numero} — {getCli(x.cliente_id)?.nombre}</option>)}</Sel>
+        {f.expediente_padre_id&&<Sel label="Relación" value={f.relacion} onChange={e=>u("relacion",e.target.value)}><option value="">Seleccionar...</option>{relacionesTipo.map(r=><option key={r}>{r}</option>)}</Sel>}
+      </Card>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><input type="checkbox" checked={f.urgente} onChange={e=>u("urgente",e.target.checked)} id="urg_e"/><label htmlFor="urg_e" style={{fontSize:13,color:TEXT}}>Urgente</label></div>
+      <Btn onClick={()=>f.numero&&f.cliente_id?handleUpdateExpediente(exp.id,f):null}>Guardar cambios</Btn>
+    </>
+  }
+
   const CliForm = () => {
     const [f,sF]=useState({nombre:"",telefono:"",email:"",direccion:"",rfc:"",notas:""});const u=(k,v)=>sF({...f,[k]:v})
     return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value)} /><Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",e.target.value)} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
@@ -254,7 +283,7 @@ export default function Dashboard({ session }) {
   const renderExpedientes = () => <div>
     <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><span style={{fontSize:12,color:MUTED}}>{expedientes.length} expediente(s)</span><Btn small onClick={()=>setModal("expediente")}><IC.Plus /> Nuevo</Btn></div>
     <div style={{overflowX:"auto",borderRadius:12,border:"1px solid rgba(184,150,62,0.08)"}}>
-      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr><Th>Exp.</Th><Th>Tipo</Th><Th>Cliente</Th><Th>Juzgado</Th><Th>Estado</Th><Th>Plazo</Th><Th sx={{width:40}}></Th></tr></thead>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr><Th>Exp.</Th><Th>Tipo</Th><Th>Cliente</Th><Th>Juzgado</Th><Th>Estado</Th><Th>Plazo</Th><Th sx={{width:60}}></Th></tr></thead>
       <tbody>{expedientes.map(e=>{const sc=estadoColors[e.estado]||{};const days=e.proximo_plazo?daysUntil(e.proximo_plazo):null;return<tr key={e.id}>
         <Td sx={{fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:6}}>{e.urgente&&<span style={{width:8,height:8,borderRadius:4,background:"#EF5350"}}/>}<span style={{color:"#64B5F6",cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span></div></Td>
         <Td sx={{fontSize:12}}>{e.tipo}</Td>
@@ -262,7 +291,7 @@ export default function Dashboard({ session }) {
         <Td sx={{fontSize:11}}>{e.juzgado}</Td>
         <Td><Badge color={sc.text} bg={sc.bg}>{e.estado}</Badge></Td>
         <Td sx={{fontSize:12,fontWeight:600,color:days===null?MUTED:days<0?"#EF9A9A":days<=5?"#FFD54F":"#81C784"}}>{e.proximo_plazo?`${formatDate(e.proximo_plazo)} (${days<0?Math.abs(days)+"d v.":days+"d"})`:"—"}</Td>
-        <Td><DelBtn onClick={()=>handleDelExp(e.id)} /></Td>
+        <Td><div style={{display:"flex",gap:2}}><EditBtn onClick={()=>setSubModal({type:"editExp",exp:e})} /><DelBtn onClick={()=>handleDelExp(e.id)} /></div></Td>
       </tr>})}</tbody></table>
     </div>
   </div>
@@ -374,7 +403,10 @@ export default function Dashboard({ session }) {
     const cli=getCli(exp.cliente_id);const acts=getExpActs(exp.id);const hijos=getRelacionados(exp.id);const padre=getPadre(exp)
     const sc=estadoColors[exp.estado]||{};const days=exp.proximo_plazo?daysUntil(exp.proximo_plazo):null
     return <div>
-      <Btn v="ghost" small onClick={()=>setDetail(null)}><IC.Back /> Volver</Btn>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+        <Btn v="ghost" small onClick={()=>setDetail(null)}><IC.Back /> Volver</Btn>
+        <Btn v="secondary" small onClick={()=>setSubModal({type:"editExp",exp})}><IC.Edit /> Editar expediente</Btn>
+      </div>
       <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:16,margin:"16px 0 24px"}}>
         <div><div style={{display:"flex",alignItems:"center",gap:10}}><h2 style={{margin:0,fontSize:22,color:TEXT,fontWeight:700}}>{exp.numero}</h2>{exp.urgente&&<Badge color="#C62828" bg="#FFEBEE">URGENTE</Badge>}<Badge color={sc.text} bg={sc.bg}>{exp.estado}</Badge></div><div style={{fontSize:13,color:MUTED,marginTop:6}}>{exp.tipo} · {exp.materia} · {exp.juzgado}</div></div>
         {days!==null&&<div style={{textAlign:"right"}}><div style={{fontSize:10,textTransform:"uppercase",letterSpacing:1,color:MUTED}}>Próximo plazo</div><div style={{fontSize:18,fontWeight:700,color:days<0?"#EF9A9A":days<=5?"#FFD54F":"#81C784"}}>{formatDate(exp.proximo_plazo)}</div></div>}
@@ -525,5 +557,6 @@ export default function Dashboard({ session }) {
     {subModal?.type==="actuacion"&&<ModalWrap title="Nueva Actuación" onClose={()=>setSubModal(null)}><ActForm expId={subModal.expId} /></ModalWrap>}
     {subModal?.type==="documento"&&<ModalWrap title="Nuevo Documento" onClose={()=>setSubModal(null)}><DocForm cliId={subModal.cliId} /></ModalWrap>}
     {subModal?.type==="portal"&&<ModalWrap title="Crear Acceso al Portal" onClose={()=>setSubModal(null)}><PortalForm cliId={subModal.cliId} /></ModalWrap>}
+    {subModal?.type==="editExp"&&<ModalWrap title="Editar Expediente" wide onClose={()=>setSubModal(null)}><ExpEditForm exp={subModal.exp} /></ModalWrap>}
   </div>
 }
