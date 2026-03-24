@@ -394,7 +394,7 @@ export default function Website() {
             </div>
             <div>
               <div style={{ fontFamily: FU, fontSize: 9, letterSpacing: 2, color: GOLD, textTransform: "uppercase", marginBottom: 14 }}>Contacto</div>
-              <div style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 2 }}>+52 443 555 0101<br/>contacto@tinoco.legal<br/>Morelia, Michoacán</div>
+              <div style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 2 }}>+52 443 555 0101<br/>contacto@tinoco.legal<br/>Irapuato, Guanajuato</div>
             </div>
           </div>
           <div style={{ borderTop: "1px solid rgba(184,150,62,0.06)", paddingTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
