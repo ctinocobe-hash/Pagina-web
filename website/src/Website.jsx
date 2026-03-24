@@ -26,7 +26,7 @@ const LogoIcon = ({ size = 28, color = GOLD }) => (
 const LogoHorizontal = ({ textColor = TEXT, accentColor = GOLD, mutedColor = MUTED, size = 30 }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
     <LogoIcon size={size} color={accentColor} />
-    <div>
+    <div style={{ textAlign: "center" }}>
       <div style={{ fontFamily: FT, fontSize: 20, fontWeight: 600, color: textColor, letterSpacing: 6, lineHeight: 1 }}>TINOCO</div>
       <div style={{ fontFamily: FU, fontSize: 7, fontWeight: 600, color: mutedColor, letterSpacing: 4, textTransform: "uppercase", marginTop: 1 }}>FIRMA LEGAL</div>
     </div>
