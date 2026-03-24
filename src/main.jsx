@@ -19,7 +19,7 @@ function App() {
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      if (session) detectUserType()
+      if (session) { setLoading(true); detectUserType() }
       else { setUserType(null); setUserInfo(null); setLoading(false) }
     })
     return () => subscription.unsubscribe()
