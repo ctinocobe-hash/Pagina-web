@@ -99,12 +99,13 @@ export default function Dashboard({ session }) {
   const handleAddActuacion = async (expId, f) => { const exp=getExp(expId); await db.addActuacion({...f,expediente_id:expId}); await db.addActividad(`Actuación en ${exp?.numero}: ${f.descripcion}`,'expediente',expId); setSubModal(null); loadData() }
   const handleAddDocumento = async (cliId, f) => { const cli=getCli(cliId); await db.addDocumento({...f,cliente_id:cliId}); await db.addActividad(`Documento: ${f.nombre} — ${cli?.nombre}`,'cliente',cliId); setSubModal(null); loadData() }
   const handleDelExp = async (id) => { await db.deleteExpediente(id); loadData() }
-  const handleDelCli = async (id) => { await db.deleteCliente(id); loadData() }
+  const handleDelCli = async (id) => { if(!window.confirm("¿Eliminar este cliente y todos sus datos?")) return; await db.deleteCliente(id); if(detail?.type==="cliente"&&detail?.id===id) setDetail(null); loadData() }
   const handleDelCob = async (id) => { await db.deleteCobro(id); loadData() }
   const handleDelAct = async (id) => { await db.deleteActuacion(id); loadData() }
   const handleDelDoc = async (id) => { await db.deleteDocumento(id); loadData() }
   const handleUpdCobro = async (id, estado) => { await db.updateCobro(id, { estado }); loadData() }
   const handleUpdateExpediente = async (id, f) => { await db.updateExpediente(id, f); await db.addActividad(`Expediente actualizado: ${f.numero}`,'expediente',id); setSubModal(null); loadData() }
+  const handleUpdateCliente = async (id, f) => { await db.updateCliente(id, f); await db.addActividad(`Cliente actualizado: ${f.nombre}`,'cliente',id); setSubModal(null); loadData() }
   const handleToggleVisAct = async (id, current) => { await db.updateActuacion(id, { visible_portal: !current }); loadData() }
   const handleToggleVisDoc = async (id, current) => { await db.updateDocumento(id, { visible_portal: !current }); loadData() }
   const handleLogout = async () => { await supabase.auth.signOut() }
@@ -214,7 +215,26 @@ export default function Dashboard({ session }) {
 
   const CliForm = () => {
     const [f,sF]=useState({nombre:"",telefono:"",email:"",direccion:"",rfc:"",notas:""});const u=(k,v)=>sF({...f,[k]:v})
-    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value)} /><Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",e.target.value)} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
+    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value)} /><Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",e.target.value)} /><Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value)} /><Input label="Notas" value={f.notas} onChange={e=>u("notas",e.target.value)} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
+  }
+  const CliEditForm = ({cli}) => {
+    const [f,sF]=useState({nombre:cli.nombre||"",telefono:cli.telefono||"",email:cli.email||"",direccion:cli.direccion||"",rfc:cli.rfc||"",notas:cli.notas||"",activo:cli.activo!==false})
+    const u=(k,v)=>sF({...f,[k]:v})
+    return <>
+      <Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} />
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value)} />
+        <Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} />
+      </div>
+      <Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",e.target.value)} />
+      <Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value)} />
+      <Input label="Notas" value={f.notas} onChange={e=>u("notas",e.target.value)} />
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+        <input type="checkbox" checked={f.activo} onChange={e=>u("activo",e.target.checked)} id="activo_e"/>
+        <label htmlFor="activo_e" style={{fontSize:13,color:TEXT}}>Cliente activo</label>
+      </div>
+      <Btn onClick={()=>f.nombre?handleUpdateCliente(cli.id,f):null}>Guardar cambios</Btn>
+    </>
   }
   const CobForm = () => {
     const [f,sF]=useState({cliente_id:"",concepto:"",monto:0,estado:"Pendiente",fecha_emision:today,fecha_vencimiento:""});const u=(k,v)=>sF({...f,[k]:v})
@@ -299,12 +319,15 @@ export default function Dashboard({ session }) {
   const renderClientes = () => <div>
     <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><span style={{fontSize:12,color:MUTED}}>{clientes.length} cliente(s)</span><Btn small onClick={()=>setModal("cliente")}><IC.Plus /> Nuevo</Btn></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>
-      {clientes.map(c=>{const numExp=getCliExps(c.id).length;const portal=getPortalForCliente(c.id);return<Card key={c.id} style={{cursor:"pointer"}} onClick={()=>setDetail({type:"cliente",id:c.id})}>
+      {clientes.map(c=>{const numExp=getCliExps(c.id).length;const portal=getPortalForCliente(c.id);return<Card key={c.id}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-          <div><div style={{fontSize:15,fontWeight:700,color:TEXT}}>{c.nombre}</div><div style={{fontSize:12,color:MUTED,marginTop:3}}>{c.telefono} · {c.email}</div></div>
-          <div style={{display:"flex",gap:6}}>{portal&&<Badge color="#81C784" bg="rgba(129,199,132,0.12)">Portal</Badge>}<Badge color={c.activo?"#81C784":"#EF9A9A"} bg={c.activo?"rgba(129,199,132,0.12)":"rgba(239,154,154,0.12)"}>{c.activo?"Activo":"Inactivo"}</Badge></div>
+          <div style={{cursor:"pointer",flex:1}} onClick={()=>setDetail({type:"cliente",id:c.id})}><div style={{fontSize:15,fontWeight:700,color:TEXT}}>{c.nombre}</div><div style={{fontSize:12,color:MUTED,marginTop:3}}>{c.telefono} · {c.email}</div></div>
+          <div style={{display:"flex",gap:6,alignItems:"flex-start"}}>{portal&&<Badge color="#81C784" bg="rgba(129,199,132,0.12)">Portal</Badge>}<Badge color={c.activo?"#81C784":"#EF9A9A"} bg={c.activo?"rgba(129,199,132,0.12)":"rgba(239,154,154,0.12)"}>{c.activo?"Activo":"Inactivo"}</Badge></div>
         </div>
-        <div style={{fontSize:12,color:MUTED}}>{numExp} expediente(s) · {getCliDocs(c.id).length} docs</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:12,color:MUTED}}>{numExp} expediente(s) · {getCliDocs(c.id).length} docs</div>
+          <div style={{display:"flex",gap:2}}><EditBtn onClick={()=>setSubModal({type:"editCli",cli:c})} /><DelBtn onClick={()=>handleDelCli(c.id)} /></div>
+        </div>
       </Card>})}
     </div>
   </div>
@@ -444,7 +467,11 @@ export default function Dashboard({ session }) {
     const portal=getPortalForCliente(cli.id)
     const pendCli=cobs.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+Number(c.monto),0)
     return <div>
-      <Btn v="ghost" small onClick={()=>setDetail(null)}><IC.Back /> Volver</Btn>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+        <Btn v="ghost" small onClick={()=>setDetail(null)}><IC.Back /> Volver</Btn>
+        <Btn v="secondary" small onClick={()=>setSubModal({type:"editCli",cli})}><IC.Edit /> Editar cliente</Btn>
+        <Btn v="danger" small onClick={()=>handleDelCli(cli.id)}><IC.Trash /> Eliminar</Btn>
+      </div>
       <div style={{margin:"16px 0 24px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
         <div><h2 style={{margin:0,fontSize:22,color:TEXT,fontWeight:700}}>{cli.nombre}</h2><div style={{fontSize:13,color:MUTED,marginTop:4}}>{cli.telefono} · {cli.email} · {cli.direccion}</div></div>
         <div style={{display:"flex",gap:8}}>
@@ -558,5 +585,6 @@ export default function Dashboard({ session }) {
     {subModal?.type==="documento"&&<ModalWrap title="Nuevo Documento" onClose={()=>setSubModal(null)}><DocForm cliId={subModal.cliId} /></ModalWrap>}
     {subModal?.type==="portal"&&<ModalWrap title="Crear Acceso al Portal" onClose={()=>setSubModal(null)}><PortalForm cliId={subModal.cliId} /></ModalWrap>}
     {subModal?.type==="editExp"&&<ModalWrap title="Editar Expediente" wide onClose={()=>setSubModal(null)}><ExpEditForm exp={subModal.exp} /></ModalWrap>}
+    {subModal?.type==="editCli"&&<ModalWrap title="Editar Cliente" onClose={()=>setSubModal(null)}><CliEditForm cli={subModal.cli} /></ModalWrap>}
   </div>
 }
