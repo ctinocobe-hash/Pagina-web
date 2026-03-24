@@ -579,7 +579,7 @@ export default function Dashboard({ session }) {
       <div style={{padding:"18px 16px",borderBottom:"1px solid rgba(184,150,62,0.08)"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <IC.Logo s={28} />
-          <div><div style={{fontFamily:FT,fontSize:16,fontWeight:600,color:TEXT,letterSpacing:5}}>TINOCO</div><div style={{fontFamily:FB,fontSize:9,color:MUTED,letterSpacing:2,marginTop:1}}>firma legal</div></div>
+          <div style={{textAlign:"center"}}><div style={{fontFamily:FT,fontSize:16,fontWeight:600,color:TEXT,letterSpacing:5}}>TINOCO</div><div style={{fontFamily:FB,fontSize:7,color:MUTED,letterSpacing:2,marginTop:1}}>FIRMA LEGAL</div></div>
         </div>
       </div>
       <nav style={{padding:"12px 10px",flex:1}}>
