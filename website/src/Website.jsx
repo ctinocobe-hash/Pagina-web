@@ -257,7 +257,7 @@ export default function Website() {
             </FadeIn>
             <FadeIn delay={0.3}>
               <p style={{ fontFamily: FB, fontSize: 15, color: MUTED, lineHeight: 1.9, marginTop: 16 }}>
-                Operamos en Michoacán y Guanajuato, ante tribunales administrativos, civiles, mercantiles y federales. Cada caso recibe un análisis profundo y una estrategia personalizada.
+                Operamos en Guanajuato, ante tribunales administrativos, civiles, mercantiles y federales. Cada caso recibe un análisis profundo y una estrategia personalizada.
               </p>
             </FadeIn>
             <FadeIn delay={0.4}>
@@ -378,7 +378,7 @@ export default function Website() {
           <div className="footer-g" style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 40 }}>
             <div>
               <LogoHorizontal size={24} />
-              <p style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 1.7, maxWidth: 260, marginTop: 14 }}>Defensa legal con experiencia y compromiso en Michoacán y Guanajuato.</p>
+              <p style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 1.7, maxWidth: 260, marginTop: 14 }}>Defensa legal con experiencia y compromiso en Guanajuato.</p>
             </div>
             <div>
               <div style={{ fontFamily: FU, fontSize: 9, letterSpacing: 2, color: GOLD, textTransform: "uppercase", marginBottom: 14 }}>Servicios</div>
