@@ -60,6 +60,8 @@ const IC = {
   EyeOff:()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
   Edit:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   Logo:({s=28,c=GOLD})=><svg width={s} height={s} viewBox="0 0 96 76" fill="none" stroke={c} strokeLinecap="round" strokeLinejoin="round"><line x1="48" y1="0" x2="48" y2="64" strokeWidth="3.2"/><line x1="12" y1="10" x2="84" y2="10" strokeWidth="3.2"/><circle cx="12" cy="10" r="4" strokeWidth="2.8" fill={c}/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/><line x1="0" y1="32" x2="24" y2="32" strokeWidth="3.2"/><circle cx="84" cy="10" r="4" strokeWidth="2.8" fill={c}/><line x1="84" y1="14" x2="84" y2="32" strokeWidth="2.6"/><line x1="72" y1="32" x2="96" y2="32" strokeWidth="3.2"/><line x1="36" y1="64" x2="60" y2="64" strokeWidth="3.2"/></svg>,
+  Sync:()=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+  Settings:()=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
 }
 
 export default function Dashboard({ session }) {
@@ -78,15 +80,19 @@ export default function Dashboard({ session }) {
   const [cobros, setCobros] = useState([])
   const [actividad, setActividad] = useState([])
   const [portalClientes, setPortalClientes] = useState([])
+  const [portalConfig, setPortalConfig] = useState(null)
+  const [syncStatus, setSyncStatus] = useState(null) // { loading, result, error }
 
   const loadData = useCallback(async () => {
     try {
-      const [cli,exp,act,doc,cob,actv,pc] = await Promise.all([
+      const [cli,exp,act,doc,cob,actv,pc,cfg] = await Promise.all([
         db.getClientes(), db.getExpedientes(), db.getAllActuaciones(),
-        db.getAllDocumentos(), db.getCobros(), db.getActividad(30), db.getPortalClientes()
+        db.getAllDocumentos(), db.getCobros(), db.getActividad(30),
+        db.getPortalClientes(), db.getConfiguracionPortal()
       ])
       setClientes(cli); setExpedientes(exp); setActuaciones(act)
-      setDocumentos(doc); setCobros(cob); setActividad(actv); setPortalClientes(pc)
+      setDocumentos(doc); setCobros(cob); setActividad(actv)
+      setPortalClientes(pc); setPortalConfig(cfg)
     } catch(e){ console.error(e) }
     setLoading(false)
   }, [])
@@ -128,6 +134,19 @@ export default function Dashboard({ session }) {
       loadData()
       return { success: true, email, password }
     } catch(e) { return { success: false, error: e.message } }
+  }
+
+  // Portal judicial sync
+  const handleSavePortalConfig = async (config) => {
+    try { await db.saveConfiguracionPortal(config); await loadData() } catch(e) { alert('Error al guardar: ' + e.message) }
+  }
+  const handleSincronizar = async (fechaInicio, fechaFin) => {
+    setSyncStatus({ loading: true })
+    try {
+      const result = await db.sincronizarPortal(fechaInicio, fechaFin)
+      setSyncStatus({ loading: false, result })
+      if (result.actuaciones_insertadas > 0) loadData()
+    } catch(e) { setSyncStatus({ loading: false, error: e.message }) }
   }
 
   // Metrics
@@ -277,6 +296,36 @@ export default function Dashboard({ session }) {
     const [f,sF]=useState({nombre:"",tipo:"Contrato",fecha:today,notas:"",visible_portal:false});const u=(k,v)=>sF({...f,[k]:v})
     return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Tipo" value={f.tipo} onChange={e=>u("tipo",e.target.value)}>{docTipos.map(t=><option key={t}>{t}</option>)}</Sel><Input label="Fecha" type="date" value={f.fecha} onChange={e=>u("fecha",e.target.value)} /></div><Input label="Notas" value={f.notas} onChange={e=>u("notas",e.target.value)} /><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><input type="checkbox" checked={f.visible_portal} onChange={e=>u("visible_portal",e.target.checked)} id="vpd"/><label htmlFor="vpd" style={{fontSize:13,color:TEXT}}>Compartir con el cliente en el portal</label></div><Btn onClick={()=>f.nombre?handleAddDocumento(cliId,f):null}>Guardar</Btn></>
   }
+  // Portal judicial config form
+  const PortalJudicialConfigForm = ({config, onSave}) => {
+    const [f, sF] = useState({
+      portal_url: config?.portal_url || '',
+      usuario: config?.usuario || '',
+      password: config?.password || '',
+    })
+    const [saving, setSaving] = useState(false)
+    const [saved, setSaved] = useState(false)
+    const u = (k, v) => { sF({...f, [k]: v}); setSaved(false) }
+    const save = async () => {
+      if (!f.portal_url || !f.usuario || !f.password) return
+      setSaving(true)
+      await onSave(f)
+      setSaving(false)
+      setSaved(true)
+    }
+    return <div>
+      <Input label="URL del portal judicial" value={f.portal_url} onChange={e=>u('portal_url',e.target.value)} placeholder="https://sige.poderjudicialgto.gob.mx" />
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <Input label="Usuario" value={f.usuario} onChange={e=>u('usuario',e.target.value)} />
+        <Input label="Contraseña" type="password" value={f.password} onChange={e=>u('password',e.target.value)} />
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <Btn onClick={save} v="secondary" small>{saving ? 'Guardando...' : 'Guardar credenciales'}</Btn>
+        {saved && <span style={{fontSize:12,color:"#81C784",display:"flex",alignItems:"center",gap:4}}><IC.Check /> Guardado</span>}
+      </div>
+    </div>
+  }
+
   // Portal account form
   const PortalForm = ({cliId}) => {
     const cli = getCli(cliId)
@@ -417,6 +466,95 @@ export default function Dashboard({ session }) {
       </tr>})}</tbody></table>
     </div>
   </div>
+
+  // ===== PORTAL JUDICIAL SYNC =====
+  const renderNotificaciones = () => {
+    const cfg = portalConfig
+    const ult = cfg?.ultimo_resultado
+    const ultimoSync = cfg?.ultimo_sync ? new Date(cfg.ultimo_sync).toLocaleString('es-MX') : null
+
+    return <div>
+      {/* Config section */}
+      <Card style={{marginBottom:20}}>
+        <CardTitle><IC.Settings /> Configuración del portal judicial</CardTitle>
+        <div style={{fontSize:12,color:MUTED,marginBottom:14}}>
+          Ingresa la URL y tus credenciales del sistema de notificaciones electrónicas de tu Poder Judicial estatal. Las credenciales se guardan de forma segura y se usan únicamente para obtener tus notificaciones.
+        </div>
+        <PortalJudicialConfigForm config={cfg} onSave={handleSavePortalConfig} />
+      </Card>
+
+      {/* Sync section */}
+      <Card style={{marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+          <div>
+            <CardTitle><IC.Sync /> Sincronizar notificaciones</CardTitle>
+            {ultimoSync && <div style={{fontSize:11,color:MUTED,marginBottom:8}}>Último sync: {ultimoSync}</div>}
+          </div>
+          <Btn
+            v="primary"
+            onClick={()=>!syncStatus?.loading && cfg?.portal_url && cfg?.usuario ? handleSincronizar() : null}
+            small
+          >
+            {syncStatus?.loading ? 'Sincronizando...' : <><IC.Sync /> Sincronizar ahora</>}
+          </Btn>
+        </div>
+
+        {/* Status */}
+        {syncStatus?.error && (
+          <div style={{background:"rgba(198,40,40,0.08)",border:"1px solid rgba(198,40,40,0.2)",borderRadius:10,padding:14,marginTop:12}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#EF9A9A",marginBottom:4,display:"flex",alignItems:"center",gap:6}}><IC.Alert /> Error al sincronizar</div>
+            <div style={{fontSize:12,color:"#EF9A9A"}}>{syncStatus.error}</div>
+          </div>
+        )}
+        {syncStatus?.result && (
+          <div style={{background:"rgba(46,125,50,0.08)",border:"1px solid rgba(46,125,50,0.2)",borderRadius:10,padding:14,marginTop:12}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#81C784",marginBottom:10,display:"flex",alignItems:"center",gap:6}}><IC.Check /> Sincronización completada — {syncStatus.result.periodo}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
+              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:GOLD}}>{syncStatus.result.notificaciones_encontradas}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Encontradas</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#81C784"}}>{syncStatus.result.actuaciones_insertadas}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Insertadas</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{syncStatus.result.duplicados_omitidos}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Duplicados</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{syncStatus.result.sin_expediente}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Sin expediente</div></div>
+            </div>
+            {syncStatus.result.errores?.length > 0 && <div style={{marginTop:10,fontSize:11,color:"#EF9A9A"}}>Errores: {syncStatus.result.errores.join('; ')}</div>}
+          </div>
+        )}
+        {!syncStatus && ult && (
+          <div style={{marginTop:12,padding:"10px 14px",background:"rgba(184,150,62,0.04)",borderRadius:8,fontSize:12,color:MUTED}}>
+            Última sincronización: {ult.notificaciones_encontradas} encontradas · {ult.actuaciones_insertadas} insertadas
+          </div>
+        )}
+
+        {(!cfg?.portal_url || !cfg?.usuario) && (
+          <div style={{marginTop:12,padding:"10px 14px",background:"rgba(184,150,62,0.06)",border:"1px solid rgba(184,150,62,0.12)",borderRadius:8,fontSize:12,color:GOLD}}>
+            Configura la URL y credenciales del portal judicial para habilitar la sincronización.
+          </div>
+        )}
+      </Card>
+
+      {/* Recent portal actuaciones */}
+      {(() => {
+        const portalActs = actuaciones.filter(a=>a.origen==='portal_judicial').slice(0,20)
+        if (!portalActs.length) return null
+        return <Card>
+          <CardTitle><IC.Clock /> Últimas actuaciones del portal ({portalActs.length})</CardTitle>
+          <div style={{overflowX:"auto",borderRadius:10,border:"1px solid rgba(184,150,62,0.06)"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+              <thead><tr><Th>Expediente</Th><Th>Fecha auto</Th><Th>Descripción</Th><Th>Portal</Th></tr></thead>
+              <tbody>{portalActs.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(a=>{
+                const exp=expedientes.find(e=>e.id===a.expediente_id)
+                return <tr key={a.id}>
+                  <Td sx={{fontWeight:600}}><span style={{color:"#64B5F6",cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:a.expediente_id})}>{exp?.numero||"—"}</span></Td>
+                  <Td sx={{whiteSpace:"nowrap",fontSize:12}}>{formatDate(a.fecha)}</Td>
+                  <Td sx={{fontSize:12}}>{a.descripcion}</Td>
+                  <Td><VisToggle visible={a.visible_portal} onClick={()=>handleToggleVisAct(a.id,a.visible_portal)} /></Td>
+                </tr>
+              })}</tbody>
+            </table>
+          </div>
+        </Card>
+      })()}
+    </div>
+  }
 
   // ===== PORTAL MANAGEMENT =====
   const renderPortal = () => <div>
@@ -573,11 +711,12 @@ export default function Dashboard({ session }) {
     </Card>
   }
 
-  const sections_map = {dashboard:renderDashboard,expedientes:renderExpedientes,clientes:renderClientes,vencimientos:renderVencimientos,cobranza:renderCobranza}
-  const titles = {dashboard:"Dashboard",expedientes:"Expedientes",clientes:"Clientes",vencimientos:"Vencimientos",cobranza:"Cobranza"}
+  const sections_map = {dashboard:renderDashboard,expedientes:renderExpedientes,clientes:renderClientes,vencimientos:renderVencimientos,cobranza:renderCobranza,portal:renderPortal,notificaciones:renderNotificaciones}
+  const titles = {dashboard:"Dashboard",expedientes:"Expedientes",clientes:"Clientes",vencimientos:"Vencimientos",cobranza:"Cobranza",portal:"Portal de Clientes",notificaciones:"Portal Judicial"}
   const navItems = [
     {key:"dashboard",label:"Dashboard",icon:IC.Dashboard},{key:"expedientes",label:"Expedientes",icon:IC.Folder},{key:"clientes",label:"Clientes",icon:IC.Users},
     {key:"vencimientos",label:"Vencimientos",icon:IC.Calendar},{key:"cobranza",label:"Cobranza",icon:IC.Dollar},
+    {key:"notificaciones",label:"Portal Judicial",icon:IC.Sync},{key:"portal",label:"Portal Clientes",icon:IC.Portal},
   ]
 
   const renderContent = () => {
