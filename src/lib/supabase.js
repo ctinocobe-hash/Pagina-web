@@ -303,27 +303,14 @@ export const db = {
   },
 
   async sincronizarPortal(fechaInicio, fechaFin) {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('No hay sesión activa')
     const body = {}
     if (fechaInicio && fechaFin) {
       body.fecha_inicio = fechaInicio
       body.fecha_fin = fechaFin
     }
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sincronizar-notificaciones`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify(body),
-      }
-    )
-    const json = await res.json()
-    if (!res.ok) throw new Error(json.error || 'Error al sincronizar')
+    const { data: json, error } = await supabase.functions.invoke('sincronizar-notificaciones', { body })
+    if (error) throw new Error(error.message || 'Error al sincronizar')
+    if (json?.error) throw new Error(json.error)
     return json
   },
 }
