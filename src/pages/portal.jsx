@@ -84,6 +84,83 @@ export default function Portal({ session, userInfo, previewMode = false, preview
     <span style={{ display: "inline-block", padding: "3px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, color, background: bg, whiteSpace: "nowrap" }}>{children}</span>
   )
 
+  const stagesProc = [
+    { key: "En trámite",   label: "En trámite" },
+    { key: "Pruebas",      label: "Pruebas" },
+    { key: "Alegatos",     label: "Alegatos" },
+    { key: "Sentencia",    label: "Sentencia" },
+    { key: "Apelación",    label: "Apelación" },
+    { key: "Amparo",       label: "Amparo" },
+    { key: "Ejecución",    label: "Ejecución" },
+    { key: "Concluido",    label: "Concluido" },
+  ]
+  const stagesSuc = [
+    { key: "Radicación",                   label: "Radicación" },
+    { key: "Declaratoria de herederos",    label: "Declaratoria" },
+    { key: "Inventarios y avalúos",        label: "Inventarios" },
+    { key: "Administración de bienes",     label: "Administración" },
+    { key: "Partición y adjudicación",     label: "Partición" },
+    { key: "Liquidación",                  label: "Liquidación" },
+    { key: "Ejecución de convenio",        label: "Ejecución" },
+    { key: "Concluido",                    label: "Concluido" },
+  ]
+
+  const ProgressStepper = ({ estado, materia }) => {
+    const stages = materia === "Sucesorio" ? stagesSuc : stagesProc
+    const currentIdx = stages.findIndex(s => s.key === estado)
+    if (currentIdx === -1) return null
+    return (
+      <div style={{ overflowX: "auto", marginBottom: 24, paddingBottom: 4 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", minWidth: stages.length * 88 }}>
+          {stages.map((stage, i) => {
+            const isPast = i < currentIdx
+            const isCurrent = i === currentIdx
+            const isLast = i === stages.length - 1
+            return (
+              <div key={stage.key} style={{ display: "flex", alignItems: "flex-start", flex: isLast ? "0 0 auto" : 1, minWidth: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  {/* Circle */}
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 15, flexShrink: 0,
+                    background: isCurrent ? GOLD : isPast ? "rgba(184,150,62,0.2)" : "rgba(255,255,255,0.04)",
+                    border: isCurrent ? `2px solid ${GOLD}` : isPast ? "2px solid rgba(184,150,62,0.35)" : "2px solid rgba(255,255,255,0.08)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: isCurrent ? `0 0 0 4px rgba(184,150,62,0.15)` : "none",
+                    transition: "all 0.2s",
+                  }}>
+                    {isPast && (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    )}
+                    {isCurrent && <div style={{ width: 10, height: 10, borderRadius: 5, background: "#0D0D0D" }} />}
+                  </div>
+                  {/* Label */}
+                  <div style={{
+                    fontSize: 9, textAlign: "center", maxWidth: 72, lineHeight: 1.35,
+                    color: isCurrent ? GOLD_LIGHT : isPast ? "rgba(184,150,62,0.55)" : "rgba(160,152,130,0.3)",
+                    fontWeight: isCurrent ? 700 : 400,
+                    fontFamily: FU,
+                  }}>
+                    {stage.label}
+                  </div>
+                </div>
+                {/* Connector line */}
+                {!isLast && (
+                  <div style={{
+                    flex: 1, height: 2, marginTop: 14, marginLeft: 3, marginRight: 3,
+                    background: isPast ? "rgba(184,150,62,0.3)" : "rgba(255,255,255,0.06)",
+                    borderRadius: 1,
+                  }} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   const handleLogout = async () => {
     if (previewMode) { onExitPreview(); return }
     await supabase.auth.signOut()
@@ -368,6 +445,9 @@ export default function Portal({ session, userInfo, previewMode = false, preview
                         {activeExpData.estado}
                       </Badge>
                     </div>
+
+                    {/* Progress stepper */}
+                    <ProgressStepper estado={activeExpData.estado} materia={activeExpData.materia} />
 
                     {activeExpData.notas_cliente && (
                       <div style={{
