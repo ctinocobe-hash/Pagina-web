@@ -50,7 +50,7 @@ export default function Portal({ session, userInfo }) {
   const [documentos, setDocumentos] = useState([])
   const [cobros, setCobros] = useState([])
   const [activeExp, setActiveExp] = useState(null)
-  const [section, setSection] = useState("expedientes")
+  const [section, setSection] = useState("inicio")
   const [menuOpen, setMenuOpen] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -99,7 +99,23 @@ export default function Portal({ session, userInfo }) {
   const activeExpData = expedientes.find(e => e.id === activeExp)
   const activeActs = actuaciones[activeExp] || []
 
+  // Computed for Inicio
+  const expActivos = expedientes.filter(e => e.estado !== "Concluido")
+  const nextPlazoExp = expActivos
+    .filter(e => e.proximo_plazo)
+    .sort((a, b) => new Date(a.proximo_plazo) - new Date(b.proximo_plazo))[0] || null
+  const allActuaciones = Object.values(actuaciones).flat()
+  const lastActuacion = allActuaciones
+    .filter(a => a.fecha)
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0] || null
+  const lastActuacionExp = lastActuacion
+    ? expedientes.find(e => e.id === lastActuacion.expediente_id)
+    : null
+  const mensajesAbogado = expActivos.filter(e => e.notas_cliente)
+  const todayLabel = new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+
   const navItems = [
+    { id: "inicio", label: "Inicio" },
     { id: "expedientes", label: "Mis Expedientes" },
     { id: "documentos", label: "Documentos" },
     { id: "pagos", label: "Pagos" },
@@ -150,31 +166,136 @@ export default function Portal({ session, userInfo }) {
 
       {/* Main content */}
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
-        {/* Welcome */}
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontFamily: FT, fontSize: 28, fontWeight: 600, color: TEXT, marginBottom: 4 }}>
-            Bienvenido, {cliente?.nombre?.split(' ')[0] || 'Cliente'}
-          </div>
-          <div style={{ fontFamily: FB, fontSize: 14, color: MUTED }}>
-            Consulta el avance de tus asuntos legales
-          </div>
-        </div>
 
-        {/* Summary cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 36 }}>
-          <div style={{ background: SURFACE, borderRadius: 14, padding: "20px 18px", border: "1px solid rgba(184,150,62,0.08)" }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: MUTED, marginBottom: 6 }}>Expedientes activos</div>
-            <div style={{ fontFamily: FT, fontSize: 28, fontWeight: 700, color: TEXT }}>{expedientes.filter(e => e.estado !== "Concluido").length}</div>
+        {/* INICIO */}
+        {section === "inicio" && (
+          <div>
+            {/* Greeting */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div style={{ fontFamily: FT, fontSize: 30, fontWeight: 600, color: TEXT, marginBottom: 4 }}>
+                  Bienvenido, {cliente?.nombre?.split(' ')[0] || 'Cliente'}
+                </div>
+                <div style={{ fontFamily: FB, fontSize: 13, color: MUTED }}>
+                  Consulta el avance de tus asuntos legales
+                </div>
+              </div>
+              <div style={{ fontFamily: FB, fontSize: 12, color: MUTED, textAlign: "right", textTransform: "capitalize", paddingTop: 6 }}>
+                {todayLabel}
+              </div>
+            </div>
+
+            {/* Summary cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14, marginBottom: 28 }}>
+              <div
+                onClick={() => setSection("expedientes")}
+                style={{ background: SURFACE, borderRadius: 14, padding: "20px 18px", border: "1px solid rgba(184,150,62,0.08)", cursor: "pointer" }}
+              >
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: MUTED, marginBottom: 6 }}>Expedientes activos</div>
+                <div style={{ fontFamily: FT, fontSize: 32, fontWeight: 700, color: TEXT }}>{expActivos.length}</div>
+              </div>
+              <div
+                onClick={() => setSection("documentos")}
+                style={{ background: SURFACE, borderRadius: 14, padding: "20px 18px", border: "1px solid rgba(184,150,62,0.08)", cursor: "pointer" }}
+              >
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: MUTED, marginBottom: 6 }}>Documentos</div>
+                <div style={{ fontFamily: FT, fontSize: 32, fontWeight: 700, color: TEXT }}>{documentos.length}</div>
+              </div>
+              <div
+                onClick={() => setSection("pagos")}
+                style={{ background: SURFACE, borderRadius: 14, padding: "20px 18px", border: totalPend > 0 ? "1px solid rgba(245,127,23,0.2)" : "1px solid rgba(184,150,62,0.08)", cursor: "pointer" }}
+              >
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: totalPend > 0 ? "#F57F17" : MUTED, marginBottom: 6 }}>Saldo pendiente</div>
+                <div style={{ fontFamily: FT, fontSize: 32, fontWeight: 700, color: totalPend > 0 ? GOLD_LIGHT : TEXT }}>{formatMoney(totalPend)}</div>
+              </div>
+            </div>
+
+            {/* Smart widgets: próxima fecha + último movimiento */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
+              {/* Próxima fecha importante */}
+              <div style={{
+                background: SURFACE, borderRadius: 14, padding: "22px 20px",
+                border: nextPlazoExp
+                  ? (daysUntil(nextPlazoExp.proximo_plazo) < 0 ? "1px solid rgba(198,40,40,0.25)" : daysUntil(nextPlazoExp.proximo_plazo) <= 7 ? "1px solid rgba(245,127,23,0.25)" : "1px solid rgba(184,150,62,0.1)")
+                  : "1px solid rgba(184,150,62,0.08)",
+              }}>
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: GOLD, marginBottom: 12 }}>Próxima fecha importante</div>
+                {nextPlazoExp ? (() => {
+                  const days = daysUntil(nextPlazoExp.proximo_plazo)
+                  const isOverdue = days < 0
+                  const isUrgent = days >= 0 && days <= 7
+                  const dateColor = isOverdue ? "#EF9A9A" : isUrgent ? GOLD_LIGHT : "#81C784"
+                  return (
+                    <div>
+                      <div style={{ fontFamily: FT, fontSize: 26, fontWeight: 700, color: dateColor, marginBottom: 4 }}>
+                        {formatDate(nextPlazoExp.proximo_plazo)}
+                      </div>
+                      <div style={{ fontFamily: FB, fontSize: 12, color: dateColor, marginBottom: 10 }}>
+                        {isOverdue ? `Vencido hace ${Math.abs(days)} día${Math.abs(days) !== 1 ? "s" : ""}` : days === 0 ? "Hoy" : `En ${days} día${days !== 1 ? "s" : ""}`}
+                      </div>
+                      <div style={{ fontFamily: FB, fontSize: 12, color: MUTED }}>
+                        {nextPlazoExp.numero} · {nextPlazoExp.tipo}
+                      </div>
+                    </div>
+                  )
+                })() : (
+                  <div style={{ fontFamily: FB, fontSize: 13, color: MUTED }}>Sin fechas próximas</div>
+                )}
+              </div>
+
+              {/* Último movimiento */}
+              <div style={{ background: SURFACE, borderRadius: 14, padding: "22px 20px", border: "1px solid rgba(184,150,62,0.08)" }}>
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: GOLD, marginBottom: 12 }}>Último movimiento</div>
+                {lastActuacion ? (
+                  <div>
+                    <div style={{ fontFamily: FB, fontSize: 14, fontWeight: 600, color: TEXT, marginBottom: 6, lineHeight: 1.4 }}>
+                      {lastActuacion.descripcion}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <span style={{
+                        display: "inline-block", padding: "2px 10px", borderRadius: 20,
+                        fontSize: 10, fontWeight: 600, color: GOLD, background: "rgba(184,150,62,0.1)",
+                      }}>{lastActuacion.tipo}</span>
+                      <span style={{ fontFamily: FB, fontSize: 11, color: MUTED }}>{formatDate(lastActuacion.fecha)}</span>
+                    </div>
+                    {lastActuacionExp && (
+                      <div style={{ fontFamily: FB, fontSize: 11, color: MUTED }}>
+                        {lastActuacionExp.numero} · {lastActuacionExp.tipo}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: FB, fontSize: 13, color: MUTED }}>Sin actuaciones registradas</div>
+                )}
+              </div>
+            </div>
+
+            {/* Mensajes del abogado */}
+            {mensajesAbogado.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: GOLD, marginBottom: 14 }}>Mensajes de tu abogado</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {mensajesAbogado.map(e => (
+                    <div key={e.id} style={{
+                      background: "rgba(184,150,62,0.05)", border: "1px solid rgba(184,150,62,0.15)",
+                      borderRadius: 14, padding: "18px 20px",
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <div style={{ fontFamily: FB, fontSize: 12, fontWeight: 600, color: GOLD }}>{e.numero} · {e.tipo}</div>
+                        <div style={{
+                          padding: "2px 10px", borderRadius: 20, fontSize: 10, fontWeight: 600,
+                          color: (estadoColors[e.estado] || estadoColors["En trámite"]).text,
+                          background: (estadoColors[e.estado] || estadoColors["En trámite"]).bg,
+                        }}>{e.estado}</div>
+                      </div>
+                      <div style={{ fontFamily: FB, fontSize: 13, color: TEXT, lineHeight: 1.65 }}>{e.notas_cliente}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div style={{ background: SURFACE, borderRadius: 14, padding: "20px 18px", border: "1px solid rgba(184,150,62,0.08)" }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: MUTED, marginBottom: 6 }}>Documentos</div>
-            <div style={{ fontFamily: FT, fontSize: 28, fontWeight: 700, color: TEXT }}>{documentos.length}</div>
-          </div>
-          <div style={{ background: SURFACE, borderRadius: 14, padding: "20px 18px", border: totalPend > 0 ? "1px solid rgba(245,127,23,0.2)" : "1px solid rgba(184,150,62,0.08)" }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: totalPend > 0 ? "#F57F17" : MUTED, marginBottom: 6 }}>Saldo pendiente</div>
-            <div style={{ fontFamily: FT, fontSize: 28, fontWeight: 700, color: totalPend > 0 ? GOLD_LIGHT : TEXT }}>{formatMoney(totalPend)}</div>
-          </div>
-        </div>
+        )}
 
         {/* EXPEDIENTES */}
         {section === "expedientes" && (
