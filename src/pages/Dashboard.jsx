@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase, db } from '../lib/supabase'
+import Portal from './portal'
 
 const materias = ["Administrativa", "Civil", "Mercantil", "Amparo", "Laboral", "Penal", "Familiar", "Sucesorio"]
 const estadosProc = ["En trámite", "Alegatos", "Pruebas", "Sentencia", "Apelación", "Amparo", "Ejecución", "Concluido"]
@@ -69,6 +70,7 @@ export default function Dashboard({ session }) {
   const [modal, setModal] = useState(null)
   const [subModal, setSubModal] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [portalPreview, setPortalPreview] = useState(null)
   const [clientes, setClientes] = useState([])
   const [expedientes, setExpedientes] = useState([])
   const [actuaciones, setActuaciones] = useState([])
@@ -123,8 +125,8 @@ export default function Dashboard({ session }) {
   const handleCreatePortalAccount = async (email, password, clienteId) => {
     try {
       await db.createPortalAccountSimple(email, password, clienteId)
-      setSubModal(null); loadData()
-      return { success: true }
+      loadData()
+      return { success: true, email, password }
     } catch(e) { return { success: false, error: e.message } }
   }
 
@@ -286,8 +288,23 @@ export default function Dashboard({ session }) {
       setLd(true); setResult(null)
       const r = await handleCreatePortalAccount(email, password, cliId)
       setResult(r); setLd(false)
-      if(r.success) setTimeout(()=>setSubModal(null), 1500)
     }
+    if (result?.success) return (
+      <div>
+        <div style={{background:"rgba(46,125,50,0.08)",border:"1px solid rgba(46,125,50,0.2)",borderRadius:10,padding:16,marginBottom:20}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#81C784",marginBottom:12,display:"flex",alignItems:"center",gap:6}}><IC.Check /> Cuenta creada exitosamente</div>
+          <div style={{fontSize:11,color:MUTED,marginBottom:8}}>Comparte estas credenciales con tu cliente:</div>
+          <div style={{background:"rgba(0,0,0,0.2)",borderRadius:8,padding:12,fontFamily:"monospace",fontSize:13}}>
+            <div style={{color:MUTED,fontSize:10,marginBottom:4}}>CORREO</div>
+            <div style={{color:TEXT,fontWeight:600,marginBottom:10}}>{result.email}</div>
+            <div style={{color:MUTED,fontSize:10,marginBottom:4}}>CONTRASEÑA</div>
+            <div style={{color:GOLD,fontWeight:700,letterSpacing:2}}>{result.password}</div>
+          </div>
+          <div style={{fontSize:11,color:"rgba(160,152,130,0.6)",marginTop:10}}>Guarda esta contraseña ahora, no se mostrará de nuevo.</div>
+        </div>
+        <Btn onClick={()=>setSubModal(null)}>Listo</Btn>
+      </div>
+    )
     return <>
       <div style={{background:"rgba(184,150,62,0.05)",borderRadius:10,padding:14,marginBottom:16}}>
         <div style={{fontSize:13,color:TEXT,fontWeight:600}}>{cli?.nombre}</div>
@@ -296,7 +313,6 @@ export default function Dashboard({ session }) {
       <Input label="Correo del cliente" value={email} onChange={e=>setEmail(e.target.value)} type="email" />
       <Input label="Contraseña temporal" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mín. 6 caracteres" />
       {result?.error&&<div style={{background:"rgba(198,40,40,0.08)",borderRadius:8,padding:10,marginBottom:14,fontSize:12,color:"#EF9A9A"}}>{result.error}</div>}
-      {result?.success&&<div style={{background:"rgba(46,125,50,0.08)",borderRadius:8,padding:10,marginBottom:14,fontSize:12,color:"#81C784"}}>Cuenta creada exitosamente</div>}
       <Btn onClick={()=>email&&password.length>=6?create():null}>{loading?"Creando...":"Crear cuenta de portal"}</Btn>
     </>
   }
@@ -501,8 +517,11 @@ export default function Dashboard({ session }) {
       </div>
       <div style={{margin:"16px 0 24px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
         <div><h2 style={{margin:0,fontSize:22,color:TEXT,fontWeight:700}}>{cli.nombre}</h2><div style={{fontSize:13,color:MUTED,marginTop:4}}>{cli.telefono} · {cli.email} · {cli.direccion}</div></div>
-        <div style={{display:"flex",gap:8}}>
-          {portal?<Badge color="#81C784" bg="rgba(129,199,132,0.12)">Portal activo</Badge>:
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {portal ? <>
+            <Badge color="#81C784" bg="rgba(129,199,132,0.12)">Portal activo</Badge>
+            <Btn v="secondary" small onClick={()=>setPortalPreview({clienteId:cli.id,nombre:cli.nombre})}><IC.Eye /> Ver portal</Btn>
+          </> :
           <Btn v="secondary" small onClick={()=>setSubModal({type:"portal",cliId:cli.id})}><IC.Portal /> Crear acceso portal</Btn>}
         </div>
       </div>
@@ -613,5 +632,18 @@ export default function Dashboard({ session }) {
     {subModal?.type==="portal"&&<ModalWrap title="Crear Acceso al Portal" onClose={()=>setSubModal(null)}><PortalForm cliId={subModal.cliId} /></ModalWrap>}
     {subModal?.type==="editExp"&&<ModalWrap title="Editar Expediente" wide onClose={()=>setSubModal(null)}><ExpEditForm exp={subModal.exp} /></ModalWrap>}
     {subModal?.type==="editCli"&&<ModalWrap title="Editar Cliente" onClose={()=>setSubModal(null)}><CliEditForm cli={subModal.cli} /></ModalWrap>}
+
+    {/* Portal preview overlay */}
+    {portalPreview && (
+      <div style={{position:"fixed",inset:0,zIndex:300,overflowY:"auto"}}>
+        <Portal
+          session={session}
+          userInfo={{cliente_id: portalPreview.clienteId}}
+          previewMode={true}
+          previewNombre={portalPreview.nombre}
+          onExitPreview={()=>setPortalPreview(null)}
+        />
+      </div>
+    )}
   </div>
 }

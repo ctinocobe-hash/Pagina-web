@@ -42,7 +42,7 @@ const LogoIcon = ({ size = 28, color = GOLD }) => (
   </svg>
 )
 
-export default function Portal({ session, userInfo }) {
+export default function Portal({ session, userInfo, previewMode = false, previewNombre = "", onExitPreview }) {
   const [loading, setLoading] = useState(true)
   const [cliente, setCliente] = useState(null)
   const [expedientes, setExpedientes] = useState([])
@@ -84,7 +84,10 @@ export default function Portal({ session, userInfo }) {
     <span style={{ display: "inline-block", padding: "3px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, color, background: bg, whiteSpace: "nowrap" }}>{children}</span>
   )
 
-  const handleLogout = async () => { await supabase.auth.signOut() }
+  const handleLogout = async () => {
+    if (previewMode) { onExitPreview(); return }
+    await supabase.auth.signOut()
+  }
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: BG }}>
@@ -123,6 +126,23 @@ export default function Portal({ session, userInfo }) {
 
   return (
     <div style={{ fontFamily: FU, background: BG, color: TEXT, minHeight: "100vh" }}>
+      {/* Preview banner */}
+      {previewMode && (
+        <div style={{
+          position: "sticky", top: 0, zIndex: 200,
+          background: GOLD, padding: "10px 24px",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D" }}>
+            Vista previa del portal · {previewNombre}
+          </span>
+          <button onClick={onExitPreview} style={{
+            background: "rgba(0,0,0,0.15)", border: "none", borderRadius: 8,
+            color: "#0D0D0D", fontSize: 12, fontWeight: 700, cursor: "pointer",
+            padding: "5px 14px", fontFamily: "inherit",
+          }}>Salir de vista previa</button>
+        </div>
+      )}
       {/* Header */}
       <header style={{
         background: SURFACE, borderBottom: `1px solid rgba(184,150,62,0.12)`,
