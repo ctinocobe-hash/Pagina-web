@@ -305,25 +305,38 @@ export const db = {
   async sincronizarPortal(fechaInicio, fechaFin) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw new Error('No hay sesión activa')
+
+    const agentUrl = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001'
     const body = {}
-    if (fechaInicio && fechaFin) {
-      body.fecha_inicio = fechaInicio
-      body.fecha_fin = fechaFin
-    }
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sincronizar-notificaciones`,
-      {
+    if (fechaInicio) body.fecha_inicio = fechaInicio
+    if (fechaFin) body.fecha_fin = fechaFin
+
+    let res
+    try {
+      res = await fetch(`${agentUrl}/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify(body),
-      }
-    )
+      })
+    } catch {
+      throw new Error('No se pudo conectar con el agente local. Asegúrate de que esté corriendo: cd agent && node server.js')
+    }
+
     const json = await res.json()
     if (!res.ok) throw new Error(json.error || 'Error al sincronizar')
     return json
+  },
+
+  async verificarAgente() {
+    const agentUrl = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001'
+    try {
+      const res = await fetch(`${agentUrl}/health`, { signal: AbortSignal.timeout(3000) })
+      return res.ok
+    } catch {
+      return false
+    }
   },
 }
