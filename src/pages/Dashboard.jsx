@@ -82,6 +82,7 @@ export default function Dashboard({ session }) {
   const [portalClientes, setPortalClientes] = useState([])
   const [portalConfig, setPortalConfig] = useState(null)
   const [syncStatus, setSyncStatus] = useState(null) // { loading, result, error }
+  const [agenteActivo, setAgenteActivo] = useState(null) // null=sin verificar, true/false
 
   const loadData = useCallback(async () => {
     try {
@@ -147,6 +148,10 @@ export default function Dashboard({ session }) {
       setSyncStatus({ loading: false, result })
       if (result.actuaciones_insertadas > 0) loadData()
     } catch(e) { setSyncStatus({ loading: false, error: e.message }) }
+  }
+  const checkAgente = async () => {
+    const ok = await db.verificarAgente()
+    setAgenteActivo(ok)
   }
 
   // Metrics
@@ -473,7 +478,26 @@ export default function Dashboard({ session }) {
     const ult = cfg?.ultimo_resultado
     const ultimoSync = cfg?.ultimo_sync ? new Date(cfg.ultimo_sync).toLocaleString('es-MX') : null
 
+    // Verificar agente al mostrar la sección
+    if (agenteActivo === null) checkAgente()
+
     return <div>
+      {/* Estado del agente */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"10px 14px",background:"rgba(184,150,62,0.04)",borderRadius:10,border:"1px solid rgba(184,150,62,0.1)"}}>
+        <div style={{width:9,height:9,borderRadius:"50%",background:agenteActivo===null?"#A09882":agenteActivo?"#81C784":"#EF5350",flexShrink:0,boxShadow:agenteActivo?"0 0 6px #81C78455":undefined}} />
+        <div style={{flex:1}}>
+          <span style={{fontSize:12,color:TEXT,fontWeight:600}}>Agente local: </span>
+          <span style={{fontSize:12,color:agenteActivo===null?MUTED:agenteActivo?"#81C784":"#EF9A9A"}}>
+            {agenteActivo===null?"Verificando..."
+              :agenteActivo?"Activo — listo para sincronizar"
+              :"Inactivo — ejecuta: cd agent && node server.js"}
+          </span>
+        </div>
+        <button onClick={checkAgente} style={{background:"none",border:"none",cursor:"pointer",color:MUTED,padding:4,display:"flex"}} title="Verificar agente">
+          <IC.Sync />
+        </button>
+      </div>
+
       {/* Config section */}
       <Card style={{marginBottom:20}}>
         <CardTitle><IC.Settings /> Configuración del portal judicial</CardTitle>
@@ -492,7 +516,7 @@ export default function Dashboard({ session }) {
           </div>
           <Btn
             v="primary"
-            onClick={()=>!syncStatus?.loading && cfg?.portal_url && cfg?.usuario ? handleSincronizar() : null}
+            onClick={()=>!syncStatus?.loading && agenteActivo && cfg?.portal_url && cfg?.usuario ? handleSincronizar() : null}
             small
           >
             {syncStatus?.loading ? 'Sincronizando...' : <><IC.Sync /> Sincronizar ahora</>}

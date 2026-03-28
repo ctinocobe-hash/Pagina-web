@@ -203,30 +203,21 @@ export const db = {
     return data
   },
 
-  // Simple portal account creation via signup
+  // Simple portal account creation via Edge Function (no confirmation email)
   async createPortalAccountSimple(email, password, clienteId) {
     const equipoId = await this.getEquipoId()
-    // Use signup endpoint
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
-      body: JSON.stringify({ email, password, options: { data: { tipo: 'portal' } } })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No hay sesión activa')
+
+    const { data, error } = await supabase.functions.invoke('crear-usuario-portal', {
+      body: { email, password, cliente_id: clienteId, equipo_id: equipoId }
     })
-    const authData = await res.json()
-    const newUserId = authData?.user?.id || authData?.id
-    if (!newUserId) throw new Error('Error creando cuenta')
 
-    // Confirm email automatically via SQL
-    await supabase.rpc('confirm_portal_user', { user_email: email }).catch(() => {})
-
-    // Link to portal_clientes
-    const { data, error } = await supabase.from('portal_clientes').insert({
-      user_id: newUserId, cliente_id: clienteId, equipo_id: equipoId, activo: true
-    }).select().single()
-    if (error) throw error
+    if (error) throw new Error(error.message || 'Error creando cuenta')
+    if (data?.error) throw new Error(data.error)
 
     await this.addActividad(`Portal activado para cliente`, 'cliente', clienteId)
-    return { ...data, newUserId }
+    return data
   },
 
   // Get all portal client links
@@ -303,14 +294,40 @@ export const db = {
   },
 
   async sincronizarPortal(fechaInicio, fechaFin) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No hay sesión activa')
+
+    const agentUrl = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001'
     const body = {}
-    if (fechaInicio && fechaFin) {
-      body.fecha_inicio = fechaInicio
-      body.fecha_fin = fechaFin
+    if (fechaInicio) body.fecha_inicio = fechaInicio
+    if (fechaFin) body.fecha_fin = fechaFin
+
+    let res
+    try {
+      res = await fetch(`${agentUrl}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(body),
+      })
+    } catch {
+      throw new Error('No se pudo conectar con el agente local. Asegúrate de que esté corriendo: cd agent && node server.js')
     }
-    const { data: json, error } = await supabase.functions.invoke('sincronizar-notificaciones', { body })
-    if (error) throw new Error(error.message || 'Error al sincronizar')
-    if (json?.error) throw new Error(json.error)
+
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al sincronizar')
     return json
+  },
+
+  async verificarAgente() {
+    const agentUrl = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001'
+    try {
+      const res = await fetch(`${agentUrl}/health`, { signal: AbortSignal.timeout(3000) })
+      return res.ok
+    } catch {
+      return false
+    }
   },
 }
