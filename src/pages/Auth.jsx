@@ -50,11 +50,7 @@ export default function Auth() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG, padding: 20, fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ width: '100%', maxWidth: 400, background: SURFACE, border: '1px solid rgba(184,150,62,0.1)', borderRadius: 20, padding: 40 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <LogoIcon size={48} />
-          <div style={{ height: 6 }} />
-          <div style={{ fontFamily: FT, fontSize: 28, fontWeight: 600, color: TEXT, letterSpacing: 8 }}>TINOCO</div>
-          <div style={{ width: 50, height: 1, background: GOLD, margin: '6px auto' }} />
-          <div style={{ fontFamily: FB, fontSize: 12, color: MUTED, letterSpacing: 3 }}>firma legal</div>
+          <LogoIcon size={52} />
         </div>
 
         <form onSubmit={handleSubmit}>
