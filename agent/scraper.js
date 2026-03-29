@@ -1,73 +1,34 @@
 /**
  * Scraper para el portal judicial de Guanajuato
  * Sistema: SIGE - sige.poderjudicialgto.gob.mx
- *
- * AJUSTE DE SELECTORES:
- * Abre el portal en Chrome, inicia sesión manualmente y usa las DevTools
- * (F12 > Inspector) para verificar que los selectores coincidan.
- * Busca los elementos por id, name, o clase CSS.
  */
 
 const puppeteer = require('puppeteer')
 
-// ─── Configura aquí los selectores del portal ────────────────────────────────
-const SEL = {
-  // Página de login
-  loginUrl: 'https://sige.poderjudicialgto.gob.mx',
-  inputUsuario: '#txtSuscriptor',
-  inputPassword: '#txtContrasena',
-  btnLogin: '#btnIngresar',
-
-  // Indicador de sesión iniciada (algo que sólo aparece al estar autenticado)
-  indicadorLogueado: '.menu-principal, #menu-principal, nav.navbar, .usuario-logueado',
-
-  // Navegación a notificaciones electrónicas
-  // Puede ser un link en el menú principal — ajusta el texto/href
-  linkNotificaciones: 'a[href*="notificaciones"], a[href*="acuerdos"], a:contains("Notificaciones")',
-
-  // Tabla de notificaciones
-  tablaNotificaciones: 'table.tabla-notificaciones, table#tblNotificaciones, table',
-  filaNotificacion: 'tbody tr',
-
-  // Columnas de la tabla (índice base 0)
-  // Ajusta según las columnas reales del portal
-  colExpediente: 0,   // Número de expediente
-  colFecha: 1,        // Fecha del acuerdo/notificación
-  colTipo: 2,         // Tipo de actuación
-  colDescripcion: 3,  // Descripción / texto del acuerdo
-
-  // Paginación (si aplica)
-  btnSiguiente: 'a.siguiente, a[aria-label="Siguiente"], .pagination .next a',
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
- * Extrae el texto de una celda de tabla de forma segura
+ * Convierte YYYY-MM-DD → DD/MM/YYYY (formato que usa el portal)
  */
-function celda(fila, idx) {
-  const celdas = fila.querySelectorAll('td')
-  return celdas[idx]?.innerText?.trim() || ''
+function toPortalDate(iso) {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
 }
 
 /**
  * Normaliza una fecha del portal al formato YYYY-MM-DD
- * El portal usa DD/MM/YYYY — ajusta si es diferente
  */
 function normalizarFecha(str) {
   if (!str) return null
-  // Formato DD/MM/YYYY
   const m = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
   if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
-  // Formato YYYY-MM-DD ya correcto
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
   return null
 }
 
 /**
- * Scraper principal
+ * Scraper principal para SIGE Guanajuato
  * @param {object} credenciales - { portal_url, usuario, password }
- * @param {string|null} fechaInicio - YYYY-MM-DD (opcional)
- * @param {string|null} fechaFin    - YYYY-MM-DD (opcional)
+ * @param {string|null} fechaInicio - YYYY-MM-DD
+ * @param {string|null} fechaFin    - YYYY-MM-DD
  * @returns {Array} notificaciones - [{ expediente, fecha, tipo, descripcion }]
  */
 async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin = null) {
@@ -78,93 +39,115 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
 
   try {
     const page = await browser.newPage()
-    await page.setViewport({ width: 1280, height: 800 })
+    await page.setViewport({ width: 1280, height: 900 })
 
-    // 1. Ir a la página de login
-    const loginUrl = credenciales.portal_url || SEL.loginUrl
+    // 1. Ir al portal y hacer login
+    const loginUrl = credenciales.portal_url || 'https://sige.poderjudicialgto.gob.mx'
     console.log(`[scraper] Navegando a ${loginUrl}`)
     await page.goto(loginUrl, { waitUntil: 'networkidle2', timeout: 30000 })
 
-    // 2. Iniciar sesión
-    await page.waitForSelector(SEL.inputUsuario, { timeout: 15000 })
-    await page.type(SEL.inputUsuario, credenciales.usuario, { delay: 40 })
-    await page.type(SEL.inputPassword, credenciales.password, { delay: 40 })
+    await page.waitForSelector('#txtSuscriptor', { timeout: 15000 })
+    await page.type('#txtSuscriptor', credenciales.usuario, { delay: 40 })
+    await page.type('#txtContrasena', credenciales.password, { delay: 40 })
     await Promise.all([
       page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
-      page.click(SEL.btnLogin),
+      page.click('#btnIngresar'),
     ])
 
-    // 3. Verificar que el login fue exitoso
+    // 2. Verificar login exitoso (buscar el tab de Notificaciones)
     try {
-      await page.waitForSelector(SEL.indicadorLogueado, { timeout: 10000 })
+      await page.waitForSelector('#liNE', { timeout: 10000 })
     } catch {
       const html = await page.content()
-      if (html.includes('contraseña incorrecta') || html.includes('usuario no encontrado')) {
+      if (html.includes('incorrecta') || html.includes('no encontrado')) {
         throw new Error('Credenciales incorrectas en el portal judicial')
       }
       throw new Error('No se pudo verificar el inicio de sesión en el portal')
     }
     console.log('[scraper] Sesión iniciada correctamente')
 
-    // 4. Navegar a notificaciones
-    // Intenta hacer click en el link de notificaciones del menú
-    try {
-      await page.click(SEL.linkNotificaciones)
-      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 })
-    } catch {
-      // Si no hay link de navegación, podría ser una URL directa
-      // Ajusta esta URL según el portal real
-      await page.goto(`${loginUrl}/notificaciones`, { waitUntil: 'networkidle2', timeout: 20000 })
-    }
+    // 3. Hacer clic en el tab "Notificaciones"
+    await page.click('#liNE a')
+    await page.waitForSelector('#dpInicial', { timeout: 10000 })
+    console.log('[scraper] Tab Notificaciones activo')
 
-    // 5. Aplicar filtro de fechas si el portal lo permite
-    if (fechaInicio && fechaFin) {
-      console.log(`[scraper] Filtrando del ${fechaInicio} al ${fechaFin}`)
-      // TODO: Ajustar según los controles de filtro del portal
-      // Ejemplo:
-      // await page.type('#fechaInicio', fechaInicio.split('-').reverse().join('/'))
-      // await page.type('#fechaFin', fechaFin.split('-').reverse().join('/'))
-      // await page.click('#btnFiltrar')
-      // await page.waitForNavigation({ waitUntil: 'networkidle2' })
-    }
+    // 4. Llenar fechas de búsqueda
+    const fInicio = fechaInicio ? toPortalDate(fechaInicio) : toPortalDate(
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    )
+    const fFin = fechaFin ? toPortalDate(fechaFin) : toPortalDate(
+      new Date().toISOString().split('T')[0]
+    )
 
-    // 6. Extraer notificaciones (con paginación)
-    const notificaciones = []
-    let pagina = 1
-    let hayMasPaginas = true
+    // Limpiar y escribir fecha inicial
+    await page.$eval('#dpInicial', el => el.value = '')
+    await page.type('#dpInicial', fInicio, { delay: 40 })
 
-    while (hayMasPaginas) {
-      console.log(`[scraper] Extrayendo página ${pagina}...`)
-      await page.waitForSelector(SEL.tablaNotificaciones, { timeout: 10000 })
+    // Limpiar y escribir fecha final
+    await page.$eval('#dpFinal', el => el.value = '')
+    await page.type('#dpFinal', fFin, { delay: 40 })
 
-      const filas = await page.evaluate((sel) => {
-        const tabla = document.querySelector(sel.tablaNotificaciones)
-        if (!tabla) return []
-        const filas = tabla.querySelectorAll(sel.filaNotificacion)
-        return Array.from(filas).map(fila => {
+    console.log(`[scraper] Buscando del ${fInicio} al ${fFin}`)
+
+    // 5. Clic en BUSCA y esperar resultados
+    await page.click('button[name="action"][type="submit"]')
+    await new Promise(r => setTimeout(r, 3000)) // esperar respuesta AJAX
+
+    // 6. Extraer resultados de la tabla
+    const notificaciones = await page.evaluate(() => {
+      const resultados = []
+
+      // Buscar todas las tablas en el panel de resultados
+      const tablas = document.querySelectorAll('.panel-body table, table.table, table')
+      for (const tabla of tablas) {
+        const filas = tabla.querySelectorAll('tbody tr')
+        for (const fila of filas) {
           const celdas = fila.querySelectorAll('td')
-          return {
-            expediente: celdas[sel.colExpediente]?.innerText?.trim() || '',
-            fecha:      celdas[sel.colFecha]?.innerText?.trim() || '',
-            tipo:       celdas[sel.colTipo]?.innerText?.trim() || '',
-            descripcion: celdas[sel.colDescripcion]?.innerText?.trim() || '',
+          if (celdas.length < 2) continue
+
+          // Extraer todos los textos de celdas
+          const textos = Array.from(celdas).map(c => c.innerText?.trim() || '')
+
+          // El portal SIGE típicamente muestra: expediente, fecha, tipo, descripción
+          // Intentamos identificar cuál celda es cuál por el contenido
+          let expediente = '', fecha = '', tipo = '', descripcion = ''
+
+          for (let i = 0; i < textos.length; i++) {
+            const t = textos[i]
+            // Detectar número de expediente (patrón: letras/números/año)
+            if (!expediente && /[A-Z]-?\d+\/\d{2,4}/.test(t)) {
+              expediente = t
+            }
+            // Detectar fecha (patrón: DD/MM/YYYY)
+            else if (!fecha && /\d{1,2}\/\d{1,2}\/\d{4}/.test(t)) {
+              fecha = t
+            }
+            // El texto más largo es la descripción
+            else if (t.length > descripcion.length) {
+              if (!tipo && t.length < 50) tipo = t
+              else descripcion = t
+            }
           }
-        }).filter(r => r.expediente || r.descripcion)
-      }, SEL)
 
-      notificaciones.push(...filas)
+          // Si no detectamos expediente por patrón, usar primera celda
+          if (!expediente && textos[0]) expediente = textos[0]
+          if (!descripcion && textos.length > 1) descripcion = textos[textos.length - 1]
 
-      // Siguiente página
-      const btnSig = await page.$(SEL.btnSiguiente)
-      if (btnSig) {
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }),
-          btnSig.click(),
-        ])
-        pagina++
-      } else {
-        hayMasPaginas = false
+          if (expediente || descripcion) {
+            resultados.push({ expediente, fecha, tipo, descripcion })
+          }
+        }
       }
+
+      return resultados
+    })
+
+    // Verificar si el portal mostró "no se encontraron resultados"
+    const sinResultados = await page.evaluate(() =>
+      document.body.innerText.toLowerCase().includes('no se encontraron resultados')
+    )
+    if (sinResultados && notificaciones.length === 0) {
+      console.log('[scraper] El portal indica que no hay resultados para este rango de fechas')
     }
 
     console.log(`[scraper] ${notificaciones.length} notificaciones encontradas`)
@@ -174,6 +157,7 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
       ...n,
       fecha: normalizarFecha(n.fecha) || new Date().toISOString().split('T')[0],
     }))
+
   } finally {
     await browser.close()
   }
