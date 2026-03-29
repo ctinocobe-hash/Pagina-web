@@ -83,23 +83,34 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     })
     console.log(`[scraper] Tab info: ${JSON.stringify(tabInfo)}`)
 
-    if (!tabInfo.encontrado) {
-      const dpExiste = await page.$('#dpInicial')
-      if (!dpExiste) throw new Error('No se encontró el tab de Notificaciones ni el formulario')
-    } else {
-      // Tab Bootstrap con AJAX — click real + esperar red inactiva
-      console.log(`[scraper] Haciendo clic en tab Notificaciones...`)
+    if (tabInfo.encontrado) {
+      console.log(`[scraper] Activando panel del tab Notificaciones...`)
       await page.click('#liNE a')
-      // Esperar que la red esté inactiva (AJAX completado)
       await page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 }).catch(() => {})
       await new Promise(r => setTimeout(r, 1000))
-      console.log(`[scraper] URL tras clic: ${page.url()}`)
+
+      // Forzar visibilidad del panel via JS (por si Bootstrap no activa el panel en headless)
+      const panelId = tabInfo.dataTarget?.replace('#', '')
+      await page.evaluate((pid) => {
+        // Activar tab panel manualmente
+        const panel = document.querySelector(`#${pid}`)
+        if (panel) {
+          panel.style.display = 'block'
+          panel.classList.add('active', 'in')
+        }
+        // También via jQuery/Bootstrap si está disponible
+        if (typeof $ !== 'undefined') {
+          $(`#${pid}`).addClass('active in').show()
+        }
+      }, panelId)
+      console.log(`[scraper] Panel ${panelId} activado`)
     }
 
-    const urlTrasTab = page.url()
-    console.log(`[scraper] URL tras navegar a notificaciones: ${urlTrasTab}`)
-
-    await page.waitForSelector('#dpInicial', { timeout: 20000 })
+    // Esperar que #dpInicial exista en el DOM (independiente de visibilidad)
+    await page.waitForFunction(
+      () => document.querySelector('#dpInicial') !== null,
+      { timeout: 20000 }
+    )
     console.log('[scraper] Formulario de notificaciones listo')
 
     // 4. Llenar fechas de búsqueda
