@@ -26,6 +26,12 @@ jobs:
           cd agent
           npm install
 
+      - name: Verificar código
+        run: |
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "--- primeras líneas de scraper.js ---"
+          head -6 agent/scraper.js
+
       - name: Ejecutar sincronización
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
