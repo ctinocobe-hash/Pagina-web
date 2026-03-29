@@ -84,25 +84,16 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     console.log(`[scraper] Tab info: ${JSON.stringify(tabInfo)}`)
 
     if (!tabInfo.encontrado) {
-      // El tab no existe — puede ser que ya estemos en la página correcta o que sea otra estructura
       const dpExiste = await page.$('#dpInicial')
       if (!dpExiste) throw new Error('No se encontró el tab de Notificaciones ni el formulario')
-    } else if (tabInfo.href && !tabInfo.href.includes('#') && !tabInfo.href.includes('javascript')) {
-      // Es un link real — navegar directamente
-      console.log(`[scraper] Navegando a: ${tabInfo.href}`)
-      await page.goto(tabInfo.href, { waitUntil: 'networkidle2', timeout: 30000 })
     } else {
-      // Es un tab Bootstrap — activar via JS
-      console.log(`[scraper] Activando tab via JS: ${tabInfo.dataTarget}`)
-      await page.evaluate(() => {
-        const el = document.querySelector('#liNE a')
-        if (typeof $ !== 'undefined' && $.fn.tab) {
-          $(el).tab('show')
-        } else {
-          el.click()
-        }
-      })
-      await new Promise(r => setTimeout(r, 3000))
+      // Tab Bootstrap con AJAX — click real + esperar red inactiva
+      console.log(`[scraper] Haciendo clic en tab Notificaciones...`)
+      await page.click('#liNE a')
+      // Esperar que la red esté inactiva (AJAX completado)
+      await page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 }).catch(() => {})
+      await new Promise(r => setTimeout(r, 1000))
+      console.log(`[scraper] URL tras clic: ${page.url()}`)
     }
 
     const urlTrasTab = page.url()
