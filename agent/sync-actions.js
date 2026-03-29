@@ -29,6 +29,7 @@ async function syncUsuario(config) {
     notificaciones = await scrapearNotificaciones({ portal_url, usuario, password }, hace30, hoy)
   } catch (err) {
     console.error(`[sync] Error en scraping: ${err.message}`)
+    console.error(`[sync] Stack: ${err.stack}`)
     return
   }
 

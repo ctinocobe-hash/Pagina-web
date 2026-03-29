@@ -2,6 +2,7 @@
  * Scraper para el portal judicial de Guanajuato
  * Sistema: SIGE - sige.poderjudicialgto.gob.mx
  */
+console.log('[scraper] CARGADO versión 2026-03-29-v3')
 
 const puppeteer = require('puppeteer')
 
