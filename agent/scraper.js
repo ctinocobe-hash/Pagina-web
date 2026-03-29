@@ -140,11 +140,34 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     console.log(`[scraper] Valores en form: inicio="${valoresForm.inicio}" fin="${valoresForm.fin}"`)
 
     // 5. Clic en BUSCA y esperar resultados (dentro del iframe)
+    // Primero verificar que el botón existe
+    const btnInfo = await frame.evaluate(() => {
+      const btn = document.querySelector('button[name="action"][type="submit"]')
+      if (!btn) {
+        // Buscar cualquier botón en el iframe
+        const btns = Array.from(document.querySelectorAll('button,input[type=submit]'))
+        return { encontrado: false, alternativas: btns.map(b => ({ tag: b.tagName, name: b.name, type: b.type, text: b.innerText?.trim() })) }
+      }
+      return { encontrado: true, texto: btn.innerText?.trim() }
+    })
+    console.log(`[scraper] Botón BUSCA: ${JSON.stringify(btnInfo)}`)
+
+    if (!btnInfo.encontrado) throw new Error('No se encontró el botón BUSCA en el iframe')
+
     await frame.click('button[name="action"][type="submit"]')
-    await new Promise(r => setTimeout(r, 5000))
+    console.log(`[scraper] Clic en BUSCA realizado`)
+    await new Promise(r => setTimeout(r, 8000))
+
+    // Diagnóstico post-búsqueda
+    const estadoPostBusqueda = await frame.evaluate(() => ({
+      textoResumen: document.body.innerText.substring(0, 500),
+      hayTabla: !!document.querySelector('table'),
+      hayFilas: document.querySelectorAll('tbody tr').length,
+    }))
+    console.log(`[scraper] Post-búsqueda: tabla=${estadoPostBusqueda.hayTabla} filas=${estadoPostBusqueda.hayFilas}`)
+    console.log(`[scraper] Texto: ${estadoPostBusqueda.textoResumen.substring(0, 200)}`)
 
     // 6. Extraer resultados con paginación (dentro del iframe)
-    // Columnas: 0=Juzgado, 1=Expediente, 2=Resumen, 3=Fecha Auto
     const notificaciones = []
     let pagina = 1
 
@@ -153,7 +176,8 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
       await new Promise(r => setTimeout(r, 1500))
 
       const sinResultados = await frame.evaluate(() =>
-        document.body.innerText.toLowerCase().includes('no se encontraron resultados')
+        document.body.innerText.toLowerCase().includes('no se encontraron resultados') &&
+        !document.querySelector('tbody tr')
       )
       if (sinResultados) {
         console.log('[scraper] No se encontraron resultados para este rango de fechas')
