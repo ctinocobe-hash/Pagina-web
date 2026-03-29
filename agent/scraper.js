@@ -66,29 +66,29 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     }
     console.log('[scraper] Sesión iniciada correctamente')
 
-    // 3. Hacer clic en el tab "Notificaciones"
-    // Esperar a que el tab esté presente y sea clickeable
+    // 3. Navegar a la sección de Notificaciones
     await page.waitForSelector('#liNE a', { timeout: 15000 })
-    await page.click('#liNE a')
-    console.log('[scraper] Clic en tab Notificaciones')
 
-    // Esperar que el contenido del tab cargue (AJAX)
-    await new Promise(r => setTimeout(r, 3000))
+    // Obtener el href del tab para navegar directamente si es un link
+    const notifHref = await page.evaluate(() => {
+      const el = document.querySelector('#liNE a')
+      return el ? el.href : null
+    })
+    console.log(`[scraper] URL de Notificaciones: ${notifHref}`)
 
-    // Si #dpInicial no aparece, intentar clic de nuevo
-    let dpVisible = false
-    for (let intento = 1; intento <= 3; intento++) {
-      try {
-        await page.waitForSelector('#dpInicial', { timeout: 8000 })
-        dpVisible = true
-        break
-      } catch {
-        console.log(`[scraper] Intento ${intento}: #dpInicial no visible, reintentando clic en tab...`)
-        await page.click('#liNE a')
-        await new Promise(r => setTimeout(r, 3000))
-      }
+    if (notifHref && !notifHref.endsWith('#') && !notifHref.includes('javascript')) {
+      // Es un link real — navegar directamente
+      await page.goto(notifHref, { waitUntil: 'networkidle2', timeout: 30000 })
+    } else {
+      // Es un tab AJAX — hacer clic y esperar
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {}),
+        page.click('#liNE a'),
+      ])
+      await new Promise(r => setTimeout(r, 3000))
     }
-    if (!dpVisible) throw new Error('No se pudo cargar el formulario de notificaciones')
+
+    await page.waitForSelector('#dpInicial', { timeout: 15000 })
     console.log('[scraper] Tab Notificaciones activo')
 
     // 4. Llenar fechas de búsqueda
