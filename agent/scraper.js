@@ -93,61 +93,80 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     await page.click('button[name="action"][type="submit"]')
     await new Promise(r => setTimeout(r, 3000)) // esperar respuesta AJAX
 
-    // 6. Extraer resultados de la tabla
-    const notificaciones = await page.evaluate(() => {
-      const resultados = []
+    // 6. Extraer resultados con paginación
+    // Columnas del portal SIGE:
+    // 0=Juzgado, 1=Expediente, 2=Resumen, 3=Fecha Auto, 4=Fecha Notificación, 5=Doc, 6=Rec
+    const notificaciones = []
+    let pagina = 1
 
-      // Buscar todas las tablas en el panel de resultados
-      const tablas = document.querySelectorAll('.panel-body table, table.table, table')
-      for (const tabla of tablas) {
+    while (true) {
+      console.log(`[scraper] Extrayendo página ${pagina}...`)
+
+      // Esperar que la tabla cargue
+      await new Promise(r => setTimeout(r, 1500))
+
+      // Verificar si hay resultados
+      const sinResultados = await page.evaluate(() =>
+        document.body.innerText.toLowerCase().includes('no se encontraron resultados')
+      )
+      if (sinResultados) {
+        console.log('[scraper] No se encontraron resultados para este rango de fechas')
+        break
+      }
+
+      const filas = await page.evaluate(() => {
+        const resultados = []
+        // La tabla de resultados tiene encabezado oscuro
+        const tabla = document.querySelector('table')
+        if (!tabla) return resultados
+
         const filas = tabla.querySelectorAll('tbody tr')
         for (const fila of filas) {
           const celdas = fila.querySelectorAll('td')
-          if (celdas.length < 2) continue
+          if (celdas.length < 4) continue
 
-          // Extraer todos los textos de celdas
-          const textos = Array.from(celdas).map(c => c.innerText?.trim() || '')
+          const juzgado    = celdas[0]?.innerText?.trim() || ''
+          const expediente = celdas[1]?.innerText?.trim() || ''
+          const resumen    = celdas[2]?.innerText?.trim() || ''
+          const fechaAuto  = celdas[3]?.innerText?.trim() || ''
 
-          // El portal SIGE típicamente muestra: expediente, fecha, tipo, descripción
-          // Intentamos identificar cuál celda es cuál por el contenido
-          let expediente = '', fecha = '', tipo = '', descripcion = ''
+          if (!expediente && !resumen) continue
+          resultados.push({ expediente, fecha: fechaAuto, tipo: juzgado, descripcion: resumen })
+        }
+        return resultados
+      })
 
-          for (let i = 0; i < textos.length; i++) {
-            const t = textos[i]
-            // Detectar número de expediente (patrón: letras/números/año)
-            if (!expediente && /[A-Z]-?\d+\/\d{2,4}/.test(t)) {
-              expediente = t
-            }
-            // Detectar fecha (patrón: DD/MM/YYYY)
-            else if (!fecha && /\d{1,2}\/\d{1,2}\/\d{4}/.test(t)) {
-              fecha = t
-            }
-            // El texto más largo es la descripción
-            else if (t.length > descripcion.length) {
-              if (!tipo && t.length < 50) tipo = t
-              else descripcion = t
-            }
-          }
+      notificaciones.push(...filas)
 
-          // Si no detectamos expediente por patrón, usar primera celda
-          if (!expediente && textos[0]) expediente = textos[0]
-          if (!descripcion && textos.length > 1) descripcion = textos[textos.length - 1]
-
-          if (expediente || descripcion) {
-            resultados.push({ expediente, fecha, tipo, descripcion })
+      // Intentar ir a la siguiente página
+      const siguientePagina = await page.evaluate(() => {
+        // Buscar botón "siguiente" en la paginación
+        const links = document.querySelectorAll('a, button')
+        for (const el of links) {
+          const txt = el.innerText?.trim().toLowerCase()
+          if (txt === '>' || txt === 'siguiente' || txt === '›') {
+            const disabled = el.disabled || el.classList.contains('disabled') ||
+              el.parentElement?.classList.contains('disabled')
+            if (!disabled) return true
           }
         }
-      }
+        return false
+      })
 
-      return resultados
-    })
+      if (!siguientePagina) break
 
-    // Verificar si el portal mostró "no se encontraron resultados"
-    const sinResultados = await page.evaluate(() =>
-      document.body.innerText.toLowerCase().includes('no se encontraron resultados')
-    )
-    if (sinResultados && notificaciones.length === 0) {
-      console.log('[scraper] El portal indica que no hay resultados para este rango de fechas')
+      await page.evaluate(() => {
+        const links = document.querySelectorAll('a, button')
+        for (const el of links) {
+          const txt = el.innerText?.trim().toLowerCase()
+          if (txt === '>' || txt === 'siguiente' || txt === '›') {
+            const disabled = el.disabled || el.classList.contains('disabled') ||
+              el.parentElement?.classList.contains('disabled')
+            if (!disabled) { el.click(); return }
+          }
+        }
+      })
+      pagina++
     }
 
     console.log(`[scraper] ${notificaciones.length} notificaciones encontradas`)
