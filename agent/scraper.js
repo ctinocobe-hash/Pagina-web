@@ -83,58 +83,26 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     })
     console.log(`[scraper] Tab info: ${JSON.stringify(tabInfo)}`)
 
+    // 3b. Activar tab y obtener el iframe interno
     if (tabInfo.encontrado) {
-      console.log(`[scraper] Activando panel del tab Notificaciones...`)
+      console.log(`[scraper] Activando tab Notificaciones...`)
       await page.click('#liNE a')
-      await page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 }).catch(() => {})
-      await new Promise(r => setTimeout(r, 1000))
-
-      // Forzar visibilidad del panel via JS (por si Bootstrap no activa el panel en headless)
-      const panelId = tabInfo.dataTarget?.replace('#', '')
-      await page.evaluate((pid) => {
-        // Activar tab panel manualmente
-        const panel = document.querySelector(`#${pid}`)
-        if (panel) {
-          panel.style.display = 'block'
-          panel.classList.add('active', 'in')
-        }
-        // También via jQuery/Bootstrap si está disponible
-        if (typeof $ !== 'undefined') {
-          $(`#${pid}`).addClass('active in').show()
-        }
-      }, panelId)
-      console.log(`[scraper] Panel ${panelId} activado`)
-
-      // Diagnóstico: ver qué hay dentro del panel
-      const panelDiag = await page.evaluate((pid) => {
-        const panel = document.querySelector(`#${pid}`)
-        if (!panel) return { existe: false }
-        return {
-          existe: true,
-          display: window.getComputedStyle(panel).display,
-          contenido: panel.innerHTML.substring(0, 300),
-          tieneDpInicial: !!panel.querySelector('#dpInicial'),
-          todosIds: Array.from(panel.querySelectorAll('[id]')).map(el => el.id).slice(0, 20),
-          todosInputs: Array.from(panel.querySelectorAll('input')).map(el => ({id: el.id, name: el.name, type: el.type})),
-        }
-      }, panelId)
-      console.log(`[scraper] Panel diagnóstico: ${JSON.stringify(panelDiag)}`)
+      await new Promise(r => setTimeout(r, 3000))
     }
 
-    // Esperar que #dpInicial exista en el DOM (independiente de visibilidad)
-    const dpEncontrado = await page.evaluate(() => !!document.querySelector('#dpInicial'))
-    console.log(`[scraper] #dpInicial en DOM: ${dpEncontrado}`)
-    if (!dpEncontrado) {
-      // Listar todos los inputs en la página para diagnóstico
-      const inputs = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('input')).map(el => ({id: el.id, name: el.name, type: el.type}))
-      )
-      console.log(`[scraper] Inputs en página: ${JSON.stringify(inputs)}`)
-      throw new Error('No se encontró el formulario de búsqueda (#dpInicial) después de activar el tab')
-    }
+    // El contenido está dentro del iframe #frameNE
+    console.log(`[scraper] Esperando iframe #frameNE...`)
+    await page.waitForSelector('#frameNE', { timeout: 15000 })
+    const frameElement = await page.$('#frameNE')
+    const frame = await frameElement.contentFrame()
+    if (!frame) throw new Error('No se pudo acceder al iframe de notificaciones')
+    console.log(`[scraper] Iframe encontrado: ${frame.url()}`)
+
+    // Esperar que el formulario cargue dentro del iframe
+    await frame.waitForSelector('#dpInicial', { timeout: 30000 })
     console.log('[scraper] Formulario de notificaciones listo')
 
-    // 4. Llenar fechas de búsqueda
+    // 4. Llenar fechas de búsqueda (dentro del iframe)
     const fInicio = fechaInicio ? toPortalDate(fechaInicio) : toPortalDate(
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     )
@@ -142,34 +110,26 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
       new Date().toISOString().split('T')[0]
     )
 
-    // Limpiar y escribir fecha inicial
-    await page.$eval('#dpInicial', el => el.value = '')
-    await page.type('#dpInicial', fInicio, { delay: 40 })
-
-    // Limpiar y escribir fecha final
-    await page.$eval('#dpFinal', el => el.value = '')
-    await page.type('#dpFinal', fFin, { delay: 40 })
-
+    await frame.$eval('#dpInicial', el => el.value = '')
+    await frame.type('#dpInicial', fInicio, { delay: 40 })
+    await frame.$eval('#dpFinal', el => el.value = '')
+    await frame.type('#dpFinal', fFin, { delay: 40 })
     console.log(`[scraper] Buscando del ${fInicio} al ${fFin}`)
 
-    // 5. Clic en BUSCA y esperar resultados
-    await page.click('button[name="action"][type="submit"]')
-    await new Promise(r => setTimeout(r, 3000)) // esperar respuesta AJAX
+    // 5. Clic en BUSCA y esperar resultados (dentro del iframe)
+    await frame.click('button[name="action"][type="submit"]')
+    await new Promise(r => setTimeout(r, 3000))
 
-    // 6. Extraer resultados con paginación
-    // Columnas del portal SIGE:
-    // 0=Juzgado, 1=Expediente, 2=Resumen, 3=Fecha Auto, 4=Fecha Notificación, 5=Doc, 6=Rec
+    // 6. Extraer resultados con paginación (dentro del iframe)
+    // Columnas: 0=Juzgado, 1=Expediente, 2=Resumen, 3=Fecha Auto
     const notificaciones = []
     let pagina = 1
 
     while (true) {
       console.log(`[scraper] Extrayendo página ${pagina}...`)
-
-      // Esperar que la tabla cargue
       await new Promise(r => setTimeout(r, 1500))
 
-      // Verificar si hay resultados
-      const sinResultados = await page.evaluate(() =>
+      const sinResultados = await frame.evaluate(() =>
         document.body.innerText.toLowerCase().includes('no se encontraron resultados')
       )
       if (sinResultados) {
@@ -177,33 +137,26 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
         break
       }
 
-      const filas = await page.evaluate(() => {
+      const filas = await frame.evaluate(() => {
         const resultados = []
-        // La tabla de resultados tiene encabezado oscuro
         const tabla = document.querySelector('table')
         if (!tabla) return resultados
-
         const filas = tabla.querySelectorAll('tbody tr')
         for (const fila of filas) {
           const celdas = fila.querySelectorAll('td')
           if (celdas.length < 4) continue
-
           const juzgado    = celdas[0]?.innerText?.trim() || ''
           const expediente = celdas[1]?.innerText?.trim() || ''
           const resumen    = celdas[2]?.innerText?.trim() || ''
           const fechaAuto  = celdas[3]?.innerText?.trim() || ''
-
           if (!expediente && !resumen) continue
           resultados.push({ expediente, fecha: fechaAuto, tipo: juzgado, descripcion: resumen })
         }
         return resultados
       })
-
       notificaciones.push(...filas)
 
-      // Intentar ir a la siguiente página
-      const siguientePagina = await page.evaluate(() => {
-        // Buscar botón "siguiente" en la paginación
+      const siguientePagina = await frame.evaluate(() => {
         const links = document.querySelectorAll('a, button')
         for (const el of links) {
           const txt = el.innerText?.trim().toLowerCase()
@@ -215,10 +168,9 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
         }
         return false
       })
-
       if (!siguientePagina) break
 
-      await page.evaluate(() => {
+      await frame.evaluate(() => {
         const links = document.querySelectorAll('a, button')
         for (const el of links) {
           const txt = el.innerText?.trim().toLowerCase()
