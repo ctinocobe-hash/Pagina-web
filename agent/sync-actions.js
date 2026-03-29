@@ -22,11 +22,11 @@ async function syncUsuario(config) {
 
   // Rango: últimos 30 días
   const hoy = new Date().toISOString().split('T')[0]
-  const hace30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const hace29 = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
   let notificaciones
   try {
-    notificaciones = await scrapearNotificaciones({ portal_url, usuario, password }, hace30, hoy)
+    notificaciones = await scrapearNotificaciones({ portal_url, usuario, password }, hace29, hoy)
   } catch (err) {
     console.error(`[sync] Error en scraping: ${err.message}`)
     console.error(`[sync] Stack: ${err.stack}`)
