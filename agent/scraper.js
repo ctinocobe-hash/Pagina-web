@@ -67,8 +67,28 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     console.log('[scraper] Sesión iniciada correctamente')
 
     // 3. Hacer clic en el tab "Notificaciones"
+    // Esperar a que el tab esté presente y sea clickeable
+    await page.waitForSelector('#liNE a', { timeout: 15000 })
     await page.click('#liNE a')
-    await page.waitForSelector('#dpInicial', { timeout: 10000 })
+    console.log('[scraper] Clic en tab Notificaciones')
+
+    // Esperar que el contenido del tab cargue (AJAX)
+    await new Promise(r => setTimeout(r, 3000))
+
+    // Si #dpInicial no aparece, intentar clic de nuevo
+    let dpVisible = false
+    for (let intento = 1; intento <= 3; intento++) {
+      try {
+        await page.waitForSelector('#dpInicial', { timeout: 8000 })
+        dpVisible = true
+        break
+      } catch {
+        console.log(`[scraper] Intento ${intento}: #dpInicial no visible, reintentando clic en tab...`)
+        await page.click('#liNE a')
+        await new Promise(r => setTimeout(r, 3000))
+      }
+    }
+    if (!dpVisible) throw new Error('No se pudo cargar el formulario de notificaciones')
     console.log('[scraper] Tab Notificaciones activo')
 
     // 4. Llenar fechas de búsqueda
