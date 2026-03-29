@@ -110,15 +110,38 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
       new Date().toISOString().split('T')[0]
     )
 
-    await frame.$eval('#dpInicial', el => el.value = '')
-    await frame.type('#dpInicial', fInicio, { delay: 40 })
-    await frame.$eval('#dpFinal', el => el.value = '')
-    await frame.type('#dpFinal', fFin, { delay: 40 })
-    console.log(`[scraper] Buscando del ${fInicio} al ${fFin}`)
+    // Función para llenar datepicker Angular correctamente
+    async function setDateInput(frame, selector, value) {
+      await frame.click(selector, { clickCount: 3 }) // seleccionar todo
+      await frame.type(selector, value, { delay: 50 })
+      // Disparar eventos que Angular necesita para detectar el cambio
+      await frame.evaluate((sel, val) => {
+        const el = document.querySelector(sel)
+        if (!el) return
+        // Setter nativo para React/Angular
+        const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+        if (nativeSetter) nativeSetter.call(el, val)
+        el.dispatchEvent(new Event('input',  { bubbles: true }))
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+        el.dispatchEvent(new Event('blur',   { bubbles: true }))
+      }, selector, value)
+    }
+
+    await setDateInput(frame, '#dpInicial', fInicio)
+    await new Promise(r => setTimeout(r, 300))
+    await setDateInput(frame, '#dpFinal', fFin)
+    await new Promise(r => setTimeout(r, 300))
+
+    // Verificar que los valores quedaron
+    const valoresForm = await frame.evaluate(() => ({
+      inicio: document.querySelector('#dpInicial')?.value,
+      fin:    document.querySelector('#dpFinal')?.value,
+    }))
+    console.log(`[scraper] Valores en form: inicio="${valoresForm.inicio}" fin="${valoresForm.fin}"`)
 
     // 5. Clic en BUSCA y esperar resultados (dentro del iframe)
     await frame.click('button[name="action"][type="submit"]')
-    await new Promise(r => setTimeout(r, 3000))
+    await new Promise(r => setTimeout(r, 5000))
 
     // 6. Extraer resultados con paginación (dentro del iframe)
     // Columnas: 0=Juzgado, 1=Expediente, 2=Resumen, 3=Fecha Auto
