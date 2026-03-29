@@ -1,0 +1,33 @@
+name: Sincronizar Portal Judicial
+
+on:
+  # Activación manual desde GitHub.com → Actions → Run workflow
+  workflow_dispatch:
+
+  # Automático: lunes a viernes a las 8am hora de México (14:00 UTC)
+  schedule:
+    - cron: '0 14 * * 1-5'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias del agente
+        run: |
+          cd agent
+          npm install
+
+      - name: Ejecutar sincronización
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node agent/sync-actions.js
