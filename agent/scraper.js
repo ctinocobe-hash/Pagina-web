@@ -61,12 +61,13 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     console.log(`[scraper] URL tras login: ${urlTrasLogin}`)
     console.log(`[scraper] Título: ${tituloTrasLogin}`)
 
-    // Verificar sesión activa
-    const htmlLogin = await page.content()
-    if (htmlLogin.includes('incorrecta') || htmlLogin.includes('no encontrado')) {
-      throw new Error('Credenciales incorrectas en el portal judicial')
+    // Verificar sesión activa: esperar que aparezca el tab de Notificaciones
+    try {
+      await page.waitForSelector('#liNE', { timeout: 10000 })
+      console.log('[scraper] Sesión iniciada correctamente')
+    } catch {
+      throw new Error('Login fallido: no se encontró el menú del portal tras el inicio de sesión')
     }
-    console.log('[scraper] Sesión iniciada correctamente')
 
     // 3. Intentar navegar a Notificaciones Electrónicas
     // Primero intentar activar el tab via JavaScript (más confiable en headless)
