@@ -478,24 +478,14 @@ export default function Dashboard({ session }) {
     const ult = cfg?.ultimo_resultado
     const ultimoSync = cfg?.ultimo_sync ? new Date(cfg.ultimo_sync).toLocaleString('es-MX') : null
 
-    // Verificar agente al mostrar la sección
-    if (agenteActivo === null) checkAgente()
-
     return <div>
-      {/* Estado del agente */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"10px 14px",background:"rgba(184,150,62,0.04)",borderRadius:10,border:"1px solid rgba(184,150,62,0.1)"}}>
-        <div style={{width:9,height:9,borderRadius:"50%",background:agenteActivo===null?"#A09882":agenteActivo?"#81C784":"#EF5350",flexShrink:0,boxShadow:agenteActivo?"0 0 6px #81C78455":undefined}} />
+      {/* Estado de automatización */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"10px 14px",background:"rgba(129,199,132,0.06)",borderRadius:10,border:"1px solid rgba(129,199,132,0.2)"}}>
+        <div style={{width:9,height:9,borderRadius:"50%",background:"#81C784",flexShrink:0,boxShadow:"0 0 6px #81C78455"}} />
         <div style={{flex:1}}>
-          <span style={{fontSize:12,color:TEXT,fontWeight:600}}>Agente local: </span>
-          <span style={{fontSize:12,color:agenteActivo===null?MUTED:agenteActivo?"#81C784":"#EF9A9A"}}>
-            {agenteActivo===null?"Verificando..."
-              :agenteActivo?"Activo — listo para sincronizar"
-              :"Inactivo — ejecuta: cd agent && node server.js"}
-          </span>
+          <span style={{fontSize:12,color:TEXT,fontWeight:600}}>Sincronización automática activa </span>
+          <span style={{fontSize:12,color:MUTED}}>— lunes a viernes a las 8:00 am</span>
         </div>
-        <button onClick={checkAgente} style={{background:"none",border:"none",cursor:"pointer",color:MUTED,padding:4,display:"flex"}} title="Verificar agente">
-          <IC.Sync />
-        </button>
       </div>
 
       {/* Config section */}
@@ -507,50 +497,26 @@ export default function Dashboard({ session }) {
         <PortalJudicialConfigForm config={cfg} onSave={handleSavePortalConfig} />
       </Card>
 
-      {/* Sync section */}
+      {/* Último sync */}
       <Card style={{marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+        <CardTitle><IC.Sync /> Última sincronización</CardTitle>
+        {ultimoSync ? (
           <div>
-            <CardTitle><IC.Sync /> Sincronizar notificaciones</CardTitle>
-            {ultimoSync && <div style={{fontSize:11,color:MUTED,marginBottom:8}}>Último sync: {ultimoSync}</div>}
+            <div style={{fontSize:12,color:MUTED,marginBottom:12}}>Ejecutada el {ultimoSync}</div>
+            {ult && (
+              <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
+                <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:GOLD}}>{ult.notificaciones_encontradas}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Encontradas</div></div>
+                <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#81C784"}}>{ult.actuaciones_insertadas}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Insertadas</div></div>
+                <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{ult.duplicados_omitidos}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Duplicados</div></div>
+                <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{ult.sin_expediente}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Sin expediente</div></div>
+              </div>
+            )}
           </div>
-          <Btn
-            v="primary"
-            onClick={()=>!syncStatus?.loading && agenteActivo && cfg?.portal_url && cfg?.usuario ? handleSincronizar() : null}
-            small
-          >
-            {syncStatus?.loading ? 'Sincronizando...' : <><IC.Sync /> Sincronizar ahora</>}
-          </Btn>
-        </div>
-
-        {/* Status */}
-        {syncStatus?.error && (
-          <div style={{background:"rgba(198,40,40,0.08)",border:"1px solid rgba(198,40,40,0.2)",borderRadius:10,padding:14,marginTop:12}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#EF9A9A",marginBottom:4,display:"flex",alignItems:"center",gap:6}}><IC.Alert /> Error al sincronizar</div>
-            <div style={{fontSize:12,color:"#EF9A9A"}}>{syncStatus.error}</div>
-          </div>
-        )}
-        {syncStatus?.result && (
-          <div style={{background:"rgba(46,125,50,0.08)",border:"1px solid rgba(46,125,50,0.2)",borderRadius:10,padding:14,marginTop:12}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#81C784",marginBottom:10,display:"flex",alignItems:"center",gap:6}}><IC.Check /> Sincronización completada — {syncStatus.result.periodo}</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
-              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:GOLD}}>{syncStatus.result.notificaciones_encontradas}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Encontradas</div></div>
-              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#81C784"}}>{syncStatus.result.actuaciones_insertadas}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Insertadas</div></div>
-              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{syncStatus.result.duplicados_omitidos}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Duplicados</div></div>
-              <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{syncStatus.result.sin_expediente}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Sin expediente</div></div>
-            </div>
-            {syncStatus.result.errores?.length > 0 && <div style={{marginTop:10,fontSize:11,color:"#EF9A9A"}}>Errores: {syncStatus.result.errores.join('; ')}</div>}
-          </div>
-        )}
-        {!syncStatus && ult && (
-          <div style={{marginTop:12,padding:"10px 14px",background:"rgba(184,150,62,0.04)",borderRadius:8,fontSize:12,color:MUTED}}>
-            Última sincronización: {ult.notificaciones_encontradas} encontradas · {ult.actuaciones_insertadas} insertadas
-          </div>
-        )}
-
-        {(!cfg?.portal_url || !cfg?.usuario) && (
-          <div style={{marginTop:12,padding:"10px 14px",background:"rgba(184,150,62,0.06)",border:"1px solid rgba(184,150,62,0.12)",borderRadius:8,fontSize:12,color:GOLD}}>
-            Configura la URL y credenciales del portal judicial para habilitar la sincronización.
+        ) : (
+          <div style={{fontSize:12,color:MUTED}}>
+            {(!cfg?.portal_url || !cfg?.usuario)
+              ? 'Configura la URL y credenciales del portal judicial para habilitar la sincronización.'
+              : 'Aún no se ha ejecutado ninguna sincronización. El primer sync ocurrirá el próximo día hábil a las 8:00 am.'}
           </div>
         )}
       </Card>
