@@ -37,20 +37,13 @@ function App() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0D0D0D' }}>
-        <div style={{ textAlign: 'center' }}>
-          <svg width="48" height="48" viewBox="0 0 96 76" fill="none" stroke="#B8963E" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="48" y1="0" x2="48" y2="64" strokeWidth="3.2"/><line x1="12" y1="10" x2="84" y2="10" strokeWidth="3.2"/>
-            <circle cx="12" cy="10" r="4" strokeWidth="2.8" fill="#B8963E"/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/>
-            <line x1="0" y1="32" x2="24" y2="32" strokeWidth="3.2"/><circle cx="84" cy="10" r="4" strokeWidth="2.8" fill="#B8963E"/>
-            <line x1="84" y1="14" x2="84" y2="32" strokeWidth="2.6"/><line x1="72" y1="32" x2="96" y2="32" strokeWidth="3.2"/>
-            <line x1="36" y1="64" x2="60" y2="64" strokeWidth="3.2"/>
-          </svg>
-          <div style={{ height: 6 }} />
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 600, color: '#F5F0E8', letterSpacing: 8 }}>TINOCO</div>
-          <div style={{ width: 50, height: 1, background: '#B8963E', margin: '6px auto' }} />
-          <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 12, color: '#A09882', letterSpacing: 3 }}>firma legal</div>
-          <div style={{ marginTop: 20, color: 'rgba(184,150,62,0.4)', fontSize: 13 }}>Cargando...</div>
-        </div>
+        <svg width="56" height="56" viewBox="0 0 96 76" fill="none" stroke="#B8963E" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.85 }}>
+          <line x1="48" y1="0" x2="48" y2="64" strokeWidth="3.2"/><line x1="12" y1="10" x2="84" y2="10" strokeWidth="3.2"/>
+          <circle cx="12" cy="10" r="4" strokeWidth="2.8" fill="#B8963E"/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/>
+          <line x1="0" y1="32" x2="24" y2="32" strokeWidth="3.2"/><circle cx="84" cy="10" r="4" strokeWidth="2.8" fill="#B8963E"/>
+          <line x1="84" y1="14" x2="84" y2="32" strokeWidth="2.6"/><line x1="72" y1="32" x2="96" y2="32" strokeWidth="3.2"/>
+          <line x1="36" y1="64" x2="60" y2="64" strokeWidth="3.2"/>
+        </svg>
       </div>
     )
   }
