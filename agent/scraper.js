@@ -54,42 +54,60 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
       page.click('#btnIngresar'),
     ])
 
-    // 2. Verificar login exitoso (buscar el tab de Notificaciones)
-    try {
-      await page.waitForSelector('#liNE', { timeout: 10000 })
-    } catch {
-      const html = await page.content()
-      if (html.includes('incorrecta') || html.includes('no encontrado')) {
-        throw new Error('Credenciales incorrectas en el portal judicial')
-      }
-      throw new Error('No se pudo verificar el inicio de sesión en el portal')
+    // 2. Verificar login exitoso
+    const urlTrasLogin = page.url()
+    const tituloTrasLogin = await page.title()
+    console.log(`[scraper] URL tras login: ${urlTrasLogin}`)
+    console.log(`[scraper] Título: ${tituloTrasLogin}`)
+
+    // Verificar sesión activa
+    const htmlLogin = await page.content()
+    if (htmlLogin.includes('incorrecta') || htmlLogin.includes('no encontrado')) {
+      throw new Error('Credenciales incorrectas en el portal judicial')
     }
     console.log('[scraper] Sesión iniciada correctamente')
 
-    // 3. Navegar a la sección de Notificaciones
-    await page.waitForSelector('#liNE a', { timeout: 15000 })
-
-    // Obtener el href del tab para navegar directamente si es un link
-    const notifHref = await page.evaluate(() => {
+    // 3. Intentar navegar a Notificaciones Electrónicas
+    // Primero intentar activar el tab via JavaScript (más confiable en headless)
+    const tabInfo = await page.evaluate(() => {
       const el = document.querySelector('#liNE a')
-      return el ? el.href : null
+      if (!el) return { encontrado: false }
+      return {
+        encontrado: true,
+        href: el.href,
+        texto: el.innerText?.trim(),
+        dataTarget: el.getAttribute('data-target') || el.getAttribute('href'),
+      }
     })
-    console.log(`[scraper] URL de Notificaciones: ${notifHref}`)
+    console.log(`[scraper] Tab info: ${JSON.stringify(tabInfo)}`)
 
-    if (notifHref && !notifHref.endsWith('#') && !notifHref.includes('javascript')) {
+    if (!tabInfo.encontrado) {
+      // El tab no existe — puede ser que ya estemos en la página correcta o que sea otra estructura
+      const dpExiste = await page.$('#dpInicial')
+      if (!dpExiste) throw new Error('No se encontró el tab de Notificaciones ni el formulario')
+    } else if (tabInfo.href && !tabInfo.href.includes('#') && !tabInfo.href.includes('javascript')) {
       // Es un link real — navegar directamente
-      await page.goto(notifHref, { waitUntil: 'networkidle2', timeout: 30000 })
+      console.log(`[scraper] Navegando a: ${tabInfo.href}`)
+      await page.goto(tabInfo.href, { waitUntil: 'networkidle2', timeout: 30000 })
     } else {
-      // Es un tab AJAX — hacer clic y esperar
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {}),
-        page.click('#liNE a'),
-      ])
+      // Es un tab Bootstrap — activar via JS
+      console.log(`[scraper] Activando tab via JS: ${tabInfo.dataTarget}`)
+      await page.evaluate(() => {
+        const el = document.querySelector('#liNE a')
+        if (typeof $ !== 'undefined' && $.fn.tab) {
+          $(el).tab('show')
+        } else {
+          el.click()
+        }
+      })
       await new Promise(r => setTimeout(r, 3000))
     }
 
-    await page.waitForSelector('#dpInicial', { timeout: 15000 })
-    console.log('[scraper] Tab Notificaciones activo')
+    const urlTrasTab = page.url()
+    console.log(`[scraper] URL tras navegar a notificaciones: ${urlTrasTab}`)
+
+    await page.waitForSelector('#dpInicial', { timeout: 20000 })
+    console.log('[scraper] Formulario de notificaciones listo')
 
     // 4. Llenar fechas de búsqueda
     const fInicio = fechaInicio ? toPortalDate(fechaInicio) : toPortalDate(
