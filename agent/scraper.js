@@ -45,13 +45,13 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     // 1. Ir al portal y hacer login
     const loginUrl = credenciales.portal_url || 'https://sige.poderjudicialgto.gob.mx'
     console.log(`[scraper] Navegando a ${loginUrl}`)
-    await page.goto(loginUrl, { waitUntil: 'networkidle2', timeout: 30000 })
+    await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
 
     await page.waitForSelector('#txtSuscriptor', { timeout: 15000 })
     await page.type('#txtSuscriptor', credenciales.usuario, { delay: 40 })
     await page.type('#txtContrasena', credenciales.password, { delay: 40 })
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 60000 }),
       page.click('#btnIngresar'),
     ])
 
