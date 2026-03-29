@@ -14,9 +14,9 @@ const puppeteer = require('puppeteer')
 const SEL = {
   // Página de login
   loginUrl: 'https://sige.poderjudicialgto.gob.mx',
-  inputUsuario: 'input[name="usuario"], input[id="usuario"], input[type="text"]',
-  inputPassword: 'input[name="password"], input[id="password"], input[type="password"]',
-  btnLogin: 'button[type="submit"], input[type="submit"], #btnLogin, .btn-login',
+  inputUsuario: '#txtSuscriptor',
+  inputPassword: '#txtContrasena',
+  btnLogin: '#btnIngresar',
 
   // Indicador de sesión iniciada (algo que sólo aparece al estar autenticado)
   indicadorLogueado: '.menu-principal, #menu-principal, nav.navbar, .usuario-logueado',
