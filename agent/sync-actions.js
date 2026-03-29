@@ -20,13 +20,22 @@ async function syncUsuario(config) {
   const { user_id, portal_url, usuario, password } = config
   console.log(`\n[sync] Usuario: ${user_id}`)
 
-  // Rango: últimos 30 días
-  const hoy = new Date().toISOString().split('T')[0]
-  const hace29 = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  // Rango: del mismo día del mes anterior al día de hoy
+  const hoy = new Date()
+  const prevMonth = hoy.getMonth() === 0 ? 11 : hoy.getMonth() - 1
+  const prevYear  = hoy.getMonth() === 0 ? hoy.getFullYear() - 1 : hoy.getFullYear()
+  let inicioDate  = new Date(prevYear, prevMonth, hoy.getDate())
+  // Si el día no existe en el mes anterior (ej: 31 en feb), usar el último día de ese mes
+  if (inicioDate.getMonth() !== prevMonth) {
+    inicioDate = new Date(prevYear, prevMonth + 1, 0)
+  }
+  const fechaFin   = hoy.toISOString().split('T')[0]
+  const fechaInicio = inicioDate.toISOString().split('T')[0]
+  console.log(`[sync] Rango: ${fechaInicio} → ${fechaFin}`)
 
   let notificaciones
   try {
-    notificaciones = await scrapearNotificaciones({ portal_url, usuario, password }, hace29, hoy)
+    notificaciones = await scrapearNotificaciones({ portal_url, usuario, password }, fechaInicio, fechaFin)
   } catch (err) {
     console.error(`[sync] Error en scraping: ${err.message}`)
     console.error(`[sync] Stack: ${err.stack}`)
