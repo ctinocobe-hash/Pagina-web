@@ -20,18 +20,30 @@ async function syncUsuario(config) {
   const { user_id, portal_url, usuario, password } = config
   console.log(`\n[sync] Usuario: ${user_id}`)
 
-  // Rango: del mismo día del mes anterior al día de hoy
-  const hoy = new Date()
-  const prevMonth = hoy.getMonth() === 0 ? 11 : hoy.getMonth() - 1
-  const prevYear  = hoy.getMonth() === 0 ? hoy.getFullYear() - 1 : hoy.getFullYear()
-  let inicioDate  = new Date(prevYear, prevMonth, hoy.getDate())
-  // Si el día no existe en el mes anterior (ej: 31 en feb), usar el último día de ese mes
-  if (inicioDate.getMonth() !== prevMonth) {
-    inicioDate = new Date(prevYear, prevMonth + 1, 0)
+  // Rango: del mismo día del mes anterior al día de hoy (hora de México)
+  function fechaMexico(date) {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Mexico_City',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    })
+    return fmt.format(date) // retorna YYYY-MM-DD
   }
-  const fechaFin   = hoy.toISOString().split('T')[0]
+
+  const hoy = new Date()
+  const hoyStr = fechaMexico(hoy)
+  const [anio, mes, dia] = hoyStr.split('-').map(Number)
+
+  const prevMes  = mes === 1 ? 12 : mes - 1
+  const prevAnio = mes === 1 ? anio - 1 : anio
+  // Crear fecha con mismo día en mes anterior (en UTC para evitar DST issues)
+  let inicioDate = new Date(Date.UTC(prevAnio, prevMes - 1, dia))
+  // Si el día no existe (ej: 31 en febrero), usar el último día de ese mes
+  if (inicioDate.getUTCMonth() !== prevMes - 1) {
+    inicioDate = new Date(Date.UTC(prevAnio, prevMes, 0))
+  }
+  const fechaFin    = hoyStr
   const fechaInicio = inicioDate.toISOString().split('T')[0]
-  console.log(`[sync] Rango: ${fechaInicio} → ${fechaFin}`)
+  console.log(`[sync] Rango: ${fechaInicio} → ${fechaFin} (hora México)`)
 
   let notificaciones
   try {
