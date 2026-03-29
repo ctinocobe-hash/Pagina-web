@@ -223,40 +223,38 @@ export default function Portal({ session, userInfo, previewMode = false, preview
       {/* Header */}
       <header style={{
         background: SURFACE, borderBottom: `1px solid rgba(184,150,62,0.12)`,
-        padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "sticky", top: 0, zIndex: 100,
+        padding: "0 16px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: previewMode ? 44 : 0, zIndex: 100, gap: 8,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LogoIcon size={28} />
-          <div>
-            <span style={{ fontFamily: FT, fontSize: 18, fontWeight: 600, color: TEXT, letterSpacing: 5 }}>TINOCO</span>
-            <span style={{ fontFamily: FB, fontSize: 9, color: MUTED, letterSpacing: 2, marginLeft: 8 }}>firma legal</span>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <LogoIcon size={26} />
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+            <span style={{ fontFamily: FT, fontSize: 17, fontWeight: 600, color: TEXT, letterSpacing: 5 }}>TINOCO</span>
+            <div style={{ width: "100%", height: 1, background: GOLD, margin: "2px 0" }} />
+            <span style={{ fontFamily: FB, fontSize: 8, color: MUTED, letterSpacing: 3, textTransform: "lowercase" }}>firma legal</span>
           </div>
         </div>
-        {/* Desktop nav */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {/* Nav — scrollable on mobile */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2, overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none", flex: 1, justifyContent: "flex-end" }}>
           {navItems.map(n => (
             <button key={n.id} onClick={() => setSection(n.id)} style={{
-              padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+              padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer",
               fontFamily: "inherit", fontSize: 12, fontWeight: section === n.id ? 600 : 400,
               background: section === n.id ? "rgba(184,150,62,0.1)" : "transparent",
-              color: section === n.id ? GOLD : MUTED, transition: "all 0.2s",
+              color: section === n.id ? GOLD : MUTED, transition: "all 0.2s", whiteSpace: "nowrap", flexShrink: 0,
             }}>{n.label}</button>
           ))}
-          <div style={{ width: 1, height: 24, background: "rgba(184,150,62,0.12)", margin: "0 8px" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 1, height: 24, background: "rgba(184,150,62,0.12)", margin: "0 6px", flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <div style={{
-              width: 34, height: 34, borderRadius: 17, background: "rgba(184,150,62,0.1)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{ fontFamily: FT, fontSize: 13, fontWeight: 700, color: GOLD }}>
+              width: 32, height: 32, borderRadius: 16, background: "rgba(184,150,62,0.1)",
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+            }} onClick={handleLogout} title="Cerrar sesión">
+              <span style={{ fontFamily: FT, fontSize: 12, fontWeight: 700, color: GOLD }}>
                 {cliente?.nombre?.split(' ').map(n => n[0]).slice(0,2).join('') || 'CL'}
               </span>
             </div>
-            <button onClick={handleLogout} style={{
-              background: "none", border: "none", color: MUTED, fontSize: 11,
-              cursor: "pointer", fontFamily: "inherit",
-            }}>Salir</button>
           </div>
         </div>
       </header>
