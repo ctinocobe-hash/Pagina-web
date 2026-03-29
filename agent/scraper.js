@@ -104,13 +104,34 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
         }
       }, panelId)
       console.log(`[scraper] Panel ${panelId} activado`)
+
+      // Diagnóstico: ver qué hay dentro del panel
+      const panelDiag = await page.evaluate((pid) => {
+        const panel = document.querySelector(`#${pid}`)
+        if (!panel) return { existe: false }
+        return {
+          existe: true,
+          display: window.getComputedStyle(panel).display,
+          contenido: panel.innerHTML.substring(0, 300),
+          tieneDpInicial: !!panel.querySelector('#dpInicial'),
+          todosIds: Array.from(panel.querySelectorAll('[id]')).map(el => el.id).slice(0, 20),
+          todosInputs: Array.from(panel.querySelectorAll('input')).map(el => ({id: el.id, name: el.name, type: el.type})),
+        }
+      }, panelId)
+      console.log(`[scraper] Panel diagnóstico: ${JSON.stringify(panelDiag)}`)
     }
 
     // Esperar que #dpInicial exista en el DOM (independiente de visibilidad)
-    await page.waitForFunction(
-      () => document.querySelector('#dpInicial') !== null,
-      { timeout: 20000 }
-    )
+    const dpEncontrado = await page.evaluate(() => !!document.querySelector('#dpInicial'))
+    console.log(`[scraper] #dpInicial en DOM: ${dpEncontrado}`)
+    if (!dpEncontrado) {
+      // Listar todos los inputs en la página para diagnóstico
+      const inputs = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('input')).map(el => ({id: el.id, name: el.name, type: el.type}))
+      )
+      console.log(`[scraper] Inputs en página: ${JSON.stringify(inputs)}`)
+      throw new Error('No se encontró el formulario de búsqueda (#dpInicial) después de activar el tab')
+    }
     console.log('[scraper] Formulario de notificaciones listo')
 
     // 4. Llenar fechas de búsqueda
