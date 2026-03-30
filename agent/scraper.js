@@ -102,6 +102,27 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     await frame.waitForSelector('#dpInicial', { timeout: 30000 })
     console.log('[scraper] Formulario de notificaciones listo')
 
+    // Seleccionar "Búsqueda por fechas" (radio button)
+    const radioSeleccionado = await frame.evaluate(() => {
+      // Buscar el radio/label con texto "Búsqueda por fechas"
+      const elementos = Array.from(document.querySelectorAll('input[type=radio], label, span'))
+      for (const el of elementos) {
+        const txt = el.innerText?.trim() || el.value || ''
+        if (txt.toLowerCase().includes('fechas') || txt.toLowerCase().includes('fecha')) {
+          if (el.tagName === 'INPUT') { el.click(); return `radio: ${el.id || el.value}` }
+          // Si es label, buscar el input asociado
+          const forId = el.getAttribute('for')
+          const input = forId ? document.getElementById(forId) : el.querySelector('input[type=radio]')
+          if (input) { input.click(); return `label→radio: ${input.id || input.value}` }
+          el.click()
+          return `click label: ${txt}`
+        }
+      }
+      return 'no encontrado'
+    })
+    console.log(`[scraper] Radio "Búsqueda por fechas": ${radioSeleccionado}`)
+    await new Promise(r => setTimeout(r, 1000))
+
     // 4. Llenar fechas de búsqueda (dentro del iframe)
     const fInicio = fechaInicio ? toPortalDate(fechaInicio) : toPortalDate(
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
