@@ -104,21 +104,29 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
 
     // Seleccionar "Búsqueda por fechas" (radio button)
     const radioSeleccionado = await frame.evaluate(() => {
-      // Buscar el radio/label con texto "Búsqueda por fechas"
-      const elementos = Array.from(document.querySelectorAll('input[type=radio], label, span'))
-      for (const el of elementos) {
-        const txt = el.innerText?.trim() || el.value || ''
-        if (txt.toLowerCase().includes('fechas') || txt.toLowerCase().includes('fecha')) {
-          if (el.tagName === 'INPUT') { el.click(); return `radio: ${el.id || el.value}` }
-          // Si es label, buscar el input asociado
-          const forId = el.getAttribute('for')
-          const input = forId ? document.getElementById(forId) : el.querySelector('input[type=radio]')
-          if (input) { input.click(); return `label→radio: ${input.id || input.value}` }
-          el.click()
-          return `click label: ${txt}`
+      // Buscar todos los radios y labels en el iframe
+      const radios = Array.from(document.querySelectorAll('input[type=radio]'))
+      for (const radio of radios) {
+        // Buscar el label asociado al radio
+        const label = document.querySelector(`label[for="${radio.id}"]`) ||
+                      radio.closest('label') ||
+                      radio.nextElementSibling
+        const labelTxt = label?.innerText?.trim() || ''
+        if (labelTxt.toLowerCase() === 'búsqueda por fechas') {
+          radio.click()
+          return `radio id=${radio.id} label="${labelTxt}"`
         }
       }
-      return 'no encontrado'
+      // Fallback: buscar label con texto exacto
+      const labels = Array.from(document.querySelectorAll('label'))
+      for (const lbl of labels) {
+        if (lbl.innerText?.trim().toLowerCase() === 'búsqueda por fechas') {
+          lbl.click()
+          return `label click: ${lbl.innerText.trim()}`
+        }
+      }
+      // Log todos los radios para diagnóstico
+      return 'NO ENCONTRADO - radios: ' + radios.map(r => `id=${r.id} val=${r.value}`).join(', ')
     })
     console.log(`[scraper] Radio "Búsqueda por fechas": ${radioSeleccionado}`)
     await new Promise(r => setTimeout(r, 1000))
