@@ -2,7 +2,7 @@
  * Scraper para el portal judicial de Guanajuato
  * Sistema: SIGE - sige.poderjudicialgto.gob.mx
  */
-console.log('[scraper] CARGADO versión 2026-03-29-v3')
+console.log('[scraper] CARGADO versión 2026-03-31-v4')
 
 const puppeteer = require('puppeteer')
 
@@ -23,6 +23,17 @@ function normalizarFecha(str) {
   if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
   return null
+}
+
+/**
+ * Obtiene el contentFrame del iframe #frameNE (re-adquirir tras recarga)
+ */
+async function obtenerFrame(page) {
+  await page.waitForSelector('#frameNE', { timeout: 15000 })
+  const frameElement = await page.$('#frameNE')
+  const frame = await frameElement.contentFrame()
+  if (!frame) throw new Error('No se pudo acceder al iframe de notificaciones')
+  return frame
 }
 
 /**
@@ -69,8 +80,7 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
       throw new Error('Login fallido: no se encontró el menú del portal tras el inicio de sesión')
     }
 
-    // 3. Intentar navegar a Notificaciones Electrónicas
-    // Primero intentar activar el tab via JavaScript (más confiable en headless)
+    // 3. Activar tab Notificaciones Electrónicas
     const tabInfo = await page.evaluate(() => {
       const el = document.querySelector('#liNE a')
       if (!el) return { encontrado: false }
@@ -83,7 +93,6 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     })
     console.log(`[scraper] Tab info: ${JSON.stringify(tabInfo)}`)
 
-    // 3b. Activar tab y obtener el iframe interno
     if (tabInfo.encontrado) {
       console.log(`[scraper] Activando tab Notificaciones...`)
       await page.click('#liNE a')
@@ -92,10 +101,7 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
 
     // El contenido está dentro del iframe #frameNE
     console.log(`[scraper] Esperando iframe #frameNE...`)
-    await page.waitForSelector('#frameNE', { timeout: 15000 })
-    const frameElement = await page.$('#frameNE')
-    const frame = await frameElement.contentFrame()
-    if (!frame) throw new Error('No se pudo acceder al iframe de notificaciones')
+    let frame = await obtenerFrame(page)
     console.log(`[scraper] Iframe encontrado: ${frame.url()}`)
 
     // Esperar que el formulario cargue dentro del iframe
@@ -104,10 +110,8 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
 
     // Seleccionar "Búsqueda por fechas" (radio button)
     const radioSeleccionado = await frame.evaluate(() => {
-      // Buscar todos los radios y labels en el iframe
       const radios = Array.from(document.querySelectorAll('input[type=radio]'))
       for (const radio of radios) {
-        // Buscar el label asociado al radio
         const label = document.querySelector(`label[for="${radio.id}"]`) ||
                       radio.closest('label') ||
                       radio.nextElementSibling
@@ -117,7 +121,6 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
           return `radio id=${radio.id} label="${labelTxt}"`
         }
       }
-      // Fallback: buscar label con texto exacto
       const labels = Array.from(document.querySelectorAll('label'))
       for (const lbl of labels) {
         if (lbl.innerText?.trim().toLowerCase() === 'búsqueda por fechas') {
@@ -125,7 +128,6 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
           return `label click: ${lbl.innerText.trim()}`
         }
       }
-      // Log todos los radios para diagnóstico
       return 'NO ENCONTRADO - radios: ' + radios.map(r => `id=${r.id} val=${r.value}`).join(', ')
     })
     console.log(`[scraper] Radio "Búsqueda por fechas": ${radioSeleccionado}`)
@@ -141,13 +143,11 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
 
     // Función para llenar datepicker Angular correctamente
     async function setDateInput(frame, selector, value) {
-      await frame.click(selector, { clickCount: 3 }) // seleccionar todo
+      await frame.click(selector, { clickCount: 3 })
       await frame.type(selector, value, { delay: 50 })
-      // Disparar eventos que Angular necesita para detectar el cambio
       await frame.evaluate((sel, val) => {
         const el = document.querySelector(sel)
         if (!el) return
-        // Setter nativo para React/Angular
         const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
         if (nativeSetter) nativeSetter.call(el, val)
         el.dispatchEvent(new Event('input',  { bubbles: true }))
@@ -161,40 +161,76 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
     await setDateInput(frame, '#dpFinal', fFin)
     await new Promise(r => setTimeout(r, 300))
 
-    // Verificar que los valores quedaron
     const valoresForm = await frame.evaluate(() => ({
       inicio: document.querySelector('#dpInicial')?.value,
       fin:    document.querySelector('#dpFinal')?.value,
     }))
     console.log(`[scraper] Valores en form: inicio="${valoresForm.inicio}" fin="${valoresForm.fin}"`)
 
-    // 5. Clic en BUSCA y esperar resultados (dentro del iframe)
-    // Primero verificar que el botón existe
-    const btnInfo = await frame.evaluate(() => {
-      const btn = document.querySelector('button[name="action"][type="submit"]')
-      if (!btn) {
-        // Buscar cualquier botón en el iframe
-        const btns = Array.from(document.querySelectorAll('button,input[type=submit]'))
-        return { encontrado: false, alternativas: btns.map(b => ({ tag: b.tagName, name: b.name, type: b.type, text: b.innerText?.trim() })) }
-      }
-      return { encontrado: true, texto: btn.innerText?.trim() }
+    // Verificar que el botón BUSCA existe y qué atributos tiene
+    const botonInfo = await frame.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'))
+      return btns.map(b => ({
+        name: b.name, type: b.type, text: b.innerText?.trim().substring(0, 30),
+        disabled: b.disabled, id: b.id
+      }))
     })
-    console.log(`[scraper] Botón BUSCA: ${JSON.stringify(btnInfo)}`)
+    console.log(`[scraper] Botones en iframe: ${JSON.stringify(botonInfo)}`)
 
-    if (!btnInfo.encontrado) throw new Error('No se encontró el botón BUSCA en el iframe')
+    // 5. Interceptar peticiones de red para diagnóstico
+    const requestsCapturados = []
+    page.on('request', req => {
+      if (req.url().includes('archivoelectronico') || req.url().includes('noti') ||
+          req.url().includes('busca') || req.url().includes('buscar')) {
+        requestsCapturados.push({
+          url: req.url(),
+          method: req.method(),
+          post: req.postData()?.substring(0, 300)
+        })
+      }
+    })
 
-    await frame.click('button[name="action"][type="submit"]')
-    console.log(`[scraper] Clic en BUSCA realizado`)
-    await new Promise(r => setTimeout(r, 8000))
+    // Clic en BUSCA — intentar con el botón de submit primero, fallback a evaluate
+    const botonEncontrado = await frame.evaluate(() => {
+      // Buscar por name="action"
+      let btn = document.querySelector('button[name="action"][type="submit"]')
+      if (btn) { btn.click(); return 'button[name="action"][type="submit"]' }
+      // Buscar por texto BUSCA / Buscar / Consultar
+      const btns = Array.from(document.querySelectorAll('button[type="submit"], input[type="submit"], button'))
+      for (const b of btns) {
+        const txt = (b.innerText || b.value || '').trim().toLowerCase()
+        if (txt.includes('busca') || txt.includes('buscar') || txt.includes('consultar')) {
+          b.click()
+          return `text="${b.innerText || b.value}"`
+        }
+      }
+      // Fallback: cualquier botón submit
+      const anySubmit = document.querySelector('button[type="submit"], input[type="submit"]')
+      if (anySubmit) { anySubmit.click(); return `fallback submit: ${anySubmit.outerHTML.substring(0, 100)}` }
+      return 'NO ENCONTRADO'
+    })
+    console.log(`[scraper] Botón BUSCA clickeado via: ${botonEncontrado}`)
+
+    // Esperar a que el iframe cargue los resultados (puede recargar su contenido)
+    console.log(`[scraper] Esperando resultados (15s)...`)
+    await new Promise(r => setTimeout(r, 15000))
+
+    console.log(`[scraper] Peticiones capturadas: ${JSON.stringify(requestsCapturados)}`)
+
+    // Re-adquirir frame tras posible recarga del iframe
+    frame = await obtenerFrame(page)
+    console.log(`[scraper] Frame re-adquirido: ${frame.url()}`)
 
     // Diagnóstico post-búsqueda
     const estadoPostBusqueda = await frame.evaluate(() => ({
-      textoResumen: document.body.innerText.substring(0, 500),
       hayTabla: !!document.querySelector('table'),
       hayFilas: document.querySelectorAll('tbody tr').length,
+      urlActual: window.location.href,
+      texto: document.body.innerText.substring(0, 500),
     }))
     console.log(`[scraper] Post-búsqueda: tabla=${estadoPostBusqueda.hayTabla} filas=${estadoPostBusqueda.hayFilas}`)
-    console.log(`[scraper] Texto: ${estadoPostBusqueda.textoResumen.substring(0, 200)}`)
+    console.log(`[scraper] URL iframe post: ${estadoPostBusqueda.urlActual}`)
+    console.log(`[scraper] Texto post: ${estadoPostBusqueda.texto}`)
 
     // 6. Extraer resultados con paginación (dentro del iframe)
     const notificaciones = []
