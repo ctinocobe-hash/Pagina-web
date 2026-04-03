@@ -49,8 +49,12 @@ export default function Auth() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG, padding: 20, fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ width: '100%', maxWidth: 400, background: SURFACE, border: '1px solid rgba(184,150,62,0.1)', borderRadius: 20, padding: 40 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <LogoIcon size={52} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 36 }}>
+          <LogoIcon size={44} />
+          <div>
+            <div style={{ fontFamily: FT, fontSize: 22, fontWeight: 600, color: TEXT, letterSpacing: 6 }}>TINOCO</div>
+            <div style={{ fontFamily: FB, fontSize: 9, color: MUTED, letterSpacing: 2.5, marginTop: 2 }}>FIRMA LEGAL</div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
