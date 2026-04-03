@@ -72,6 +72,9 @@ export default function Dashboard({ session }) {
   const TEXT    = dark ? "#F5F0E8" : "#1A1A1A"
   const MUTED   = dark ? "#A09882" : "#6B6050"
   const toggleTema = () => setDark(d => { const n=!d; localStorage.setItem('tema',n?'oscuro':'claro'); return n })
+  const LINK   = dark ? "#64B5F6"              : "#1565C0"
+  const TD_CLR = dark ? "#D4CCBC"              : "#3D342A"
+  const SUBTLE = dark ? "rgba(200,184,138,0.3)": "#9B8C7C"
 
   const VALID_SECTIONS = ["dashboard","expedientes","clientes","vencimientos","cobranza","portal"]
   const hashSection = window.location.hash.replace('#','')
@@ -192,7 +195,7 @@ export default function Dashboard({ session }) {
   const Sel = ({label,children,...p}) => <div style={{marginBottom:14}}><label style={{display:"block",fontSize:10,textTransform:"uppercase",letterSpacing:1.2,color:MUTED,marginBottom:5}}>{label}</label><select {...p} style={{width:"100%",padding:"9px 12px",background:SURFACE,border:"1px solid rgba(184,150,62,0.15)",borderRadius:8,color:TEXT,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}>{children}</select></div>
   const ModalWrap = ({title,children,onClose,wide}) => <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}} onClick={onClose}><div onClick={e=>e.stopPropagation()} style={{background:"#152028",border:"1px solid rgba(184,150,62,0.15)",borderRadius:16,padding:24,width:"92%",maxWidth:wide?640:480,maxHeight:"85vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><h3 style={{margin:0,fontSize:17,color:GOLD,fontWeight:700}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:MUTED,cursor:"pointer"}}><IC.X /></button></div>{children}</div></div>
   const Th = ({children,sx={}}) => <th style={{textAlign:"left",padding:"10px 12px",fontSize:10,textTransform:"uppercase",letterSpacing:1.2,color:MUTED,borderBottom:"1px solid rgba(184,150,62,0.08)",background:"rgba(184,150,62,0.03)",whiteSpace:"nowrap",...sx}}>{children}</th>
-  const Td = ({children,sx={}}) => <td style={{padding:"10px 12px",borderBottom:"1px solid rgba(184,150,62,0.04)",color:"#D4CCBC",verticalAlign:"middle",fontSize:13,...sx}}>{children}</td>
+  const Td = ({children,sx={}}) => <td style={{padding:"10px 12px",borderBottom:"1px solid rgba(184,150,62,0.04)",color:TD_CLR,verticalAlign:"middle",fontSize:13,...sx}}>{children}</td>
   const Card = ({children,style:sx={}}) => <div style={{background:"rgba(184,150,62,0.03)",border:"1px solid rgba(184,150,62,0.08)",borderRadius:14,padding:18,position:"relative",...sx}}>{children}</div>
   const CardTitle = ({children}) => <div style={{fontSize:12,fontWeight:700,color:GOLD,marginBottom:10,display:"flex",alignItems:"center",gap:6,textTransform:"uppercase",letterSpacing:.8}}>{children}</div>
   const DelBtn = ({onClick}) => <button onClick={onClick} style={{background:"none",border:"none",color:"rgba(239,154,154,0.5)",cursor:"pointer",padding:2}}><IC.Trash /></button>
@@ -391,16 +394,16 @@ export default function Dashboard({ session }) {
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
       <Card><CardTitle><IC.Calendar /> Plazos próximos (15d)</CardTitle>
-        {plazosProx.length===0?<div style={{fontSize:12,color:"rgba(200,184,138,0.25)",padding:"10px 0"}}>No hay plazos próximos</div>:
+        {plazosProx.length===0?<div style={{fontSize:12,color:SUBTLE,padding:"10px 0"}}>No hay plazos próximos</div>:
         plazosProx.map(e=><div key={e.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(184,150,62,0.04)",display:"flex",justifyContent:"space-between"}}>
-          <div><div style={{fontSize:13,fontWeight:600,color:"#64B5F6",cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</div><div style={{fontSize:11,color:MUTED,marginTop:2}}>{getCli(e.cliente_id)?.nombre}</div></div>
+          <div><div style={{fontSize:13,fontWeight:600,color:LINK,cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</div><div style={{fontSize:11,color:MUTED,marginTop:2}}>{getCli(e.cliente_id)?.nombre}</div></div>
           <div style={{textAlign:"right"}}><div style={{fontSize:12,fontWeight:600,color:daysUntil(e.proximo_plazo)<=3?"#EF9A9A":GOLD}}>{formatDate(e.proximo_plazo)}</div><div style={{fontSize:11,color:MUTED}}>{daysUntil(e.proximo_plazo)}d</div></div>
         </div>)}
       </Card>
       <Card><CardTitle>Actividad reciente</CardTitle>
         {actividad.slice(0,8).map(a=><div key={a.id} style={{padding:"6px 0",borderBottom:"1px solid rgba(184,150,62,0.03)",display:"flex",gap:8}}>
           <div style={{width:6,height:6,borderRadius:3,background:a.tipo==="expediente"?"#64B5F6":a.tipo==="cliente"?"#81C784":"#FFD54F",marginTop:5,flexShrink:0}} />
-          <div><div style={{fontSize:12,color:"#D4CCBC"}}>{a.texto}</div><div style={{fontSize:10,color:"rgba(200,184,138,0.3)",marginTop:2}}>{formatDate(a.fecha)}</div></div>
+          <div><div style={{fontSize:12,color:TD_CLR}}>{a.texto}</div><div style={{fontSize:10,color:SUBTLE,marginTop:2}}>{formatDate(a.fecha)}</div></div>
         </div>)}
       </Card>
     </div>
@@ -411,7 +414,7 @@ export default function Dashboard({ session }) {
     <div style={{overflowX:"auto",borderRadius:12,border:"1px solid rgba(184,150,62,0.08)"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr><Th>Exp.</Th><Th>Tipo</Th><Th>Cliente</Th><Th>Juzgado</Th><Th>Estado</Th><Th>Plazo</Th><Th sx={{width:60}}></Th></tr></thead>
       <tbody>{expedientes.map(e=>{const sc=estadoColors[e.estado]||{};const days=e.proximo_plazo?daysUntil(e.proximo_plazo):null;return<tr key={e.id}>
-        <Td sx={{fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:6}}>{e.urgente&&<span style={{width:8,height:8,borderRadius:4,background:"#EF5350"}}/>}<span style={{color:"#64B5F6",cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span></div></Td>
+        <Td sx={{fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:6}}>{e.urgente&&<span style={{width:8,height:8,borderRadius:4,background:"#EF5350"}}/>}<span style={{color:LINK,cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span></div></Td>
         <Td sx={{fontSize:12}}>{e.tipo}</Td>
         <Td><span style={{cursor:"pointer"}} onClick={()=>setDetail({type:"cliente",id:e.cliente_id})}>{getCli(e.cliente_id)?.nombre}</span></Td>
         <Td sx={{fontSize:11}}>{e.juzgado}</Td>
@@ -444,14 +447,14 @@ export default function Dashboard({ session }) {
       {plazosVenc.length>0&&<div style={{background:"rgba(198,40,40,0.06)",border:"1px solid rgba(198,40,40,0.2)",borderRadius:12,padding:16,marginBottom:20}}>
         <div style={{fontSize:13,fontWeight:700,color:"#EF9A9A",marginBottom:10,display:"flex",alignItems:"center",gap:6}}><IC.Alert /> Plazos vencidos ({plazosVenc.length})</div>
         {plazosVenc.map(e=><div key={e.id} style={{padding:"7px 0",display:"flex",justifyContent:"space-between",borderBottom:"1px solid rgba(198,40,40,0.1)"}}>
-          <span style={{color:"#64B5F6",cursor:"pointer",fontWeight:600,fontSize:13}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero} — {getCli(e.cliente_id)?.nombre}</span>
+          <span style={{color:LINK,cursor:"pointer",fontWeight:600,fontSize:13}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero} — {getCli(e.cliente_id)?.nombre}</span>
           <span style={{color:"#EF9A9A",fontSize:12,fontWeight:600}}>Venció {formatDate(e.proximo_plazo)}</span>
         </div>)}
       </div>}
       <div style={{overflowX:"auto",borderRadius:12,border:"1px solid rgba(184,150,62,0.08)"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr><Th>Expediente</Th><Th>Cliente</Th><Th>Estado</Th><Th>Plazo</Th><Th>Días</Th></tr></thead>
         <tbody>{sorted.map(e=>{const d=daysUntil(e.proximo_plazo);const sc=estadoColors[e.estado]||{};return<tr key={e.id}>
-          <Td sx={{fontWeight:600}}><span style={{color:"#64B5F6",cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span></Td>
+          <Td sx={{fontWeight:600}}><span style={{color:LINK,cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span></Td>
           <Td>{getCli(e.cliente_id)?.nombre}</Td>
           <Td><Badge color={sc.text} bg={sc.bg}>{e.estado}</Badge></Td>
           <Td sx={{fontWeight:600,fontSize:12}}>{formatDate(e.proximo_plazo)}</Td>
@@ -542,7 +545,7 @@ export default function Dashboard({ session }) {
               <tbody>{portalActs.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(a=>{
                 const exp=expedientes.find(e=>e.id===a.expediente_id)
                 return <tr key={a.id}>
-                  <Td sx={{fontWeight:600}}><span style={{color:"#64B5F6",cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:a.expediente_id})}>{exp?.numero||"—"}</span></Td>
+                  <Td sx={{fontWeight:600}}><span style={{color:LINK,cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:a.expediente_id})}>{exp?.numero||"—"}</span></Td>
                   <Td sx={{whiteSpace:"nowrap",fontSize:12}}>{formatDate(a.fecha)}</Td>
                   <Td sx={{fontSize:12}}>{a.descripcion}</Td>
                   <Td><VisToggle visible={a.visible_portal} onClick={()=>handleToggleVisAct(a.id,a.visible_portal)} /></Td>
@@ -617,9 +620,9 @@ export default function Dashboard({ session }) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
         <Card style={{cursor:"pointer"}} onClick={()=>cli&&setDetail({type:"cliente",id:cli.id})}><CardTitle><IC.Users /> Cliente</CardTitle><div style={{fontSize:15,fontWeight:600,color:TEXT}}>{cli?.nombre||"—"}</div><div style={{fontSize:12,color:MUTED,marginTop:4}}>{cli?.telefono} · {cli?.email}</div></Card>
         <Card><CardTitle><IC.Link /> Relaciones</CardTitle>
-          {padre&&<div style={{padding:"6px 0",fontSize:13}}><span style={{color:MUTED,fontSize:11,marginRight:6}}>PADRE:</span><span style={{color:"#64B5F6",cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:padre.id})}>{padre.numero}</span></div>}
-          {hijos.map(h=><div key={h.id} style={{padding:"5px 0",fontSize:13,display:"flex",alignItems:"center",gap:8}}><Badge color="#CE93D8" bg="rgba(206,147,216,0.12)">{h.relacion||"Rel."}</Badge><span style={{color:"#64B5F6",cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:h.id})}>{h.numero}</span></div>)}
-          {!padre&&hijos.length===0&&<div style={{fontSize:12,color:"rgba(200,184,138,0.25)"}}>Sin vínculos</div>}
+          {padre&&<div style={{padding:"6px 0",fontSize:13}}><span style={{color:MUTED,fontSize:11,marginRight:6}}>PADRE:</span><span style={{color:LINK,cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:padre.id})}>{padre.numero}</span></div>}
+          {hijos.map(h=><div key={h.id} style={{padding:"5px 0",fontSize:13,display:"flex",alignItems:"center",gap:8}}><Badge color="#CE93D8" bg="rgba(206,147,216,0.12)">{h.relacion||"Rel."}</Badge><span style={{color:LINK,cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:h.id})}>{h.numero}</span></div>)}
+          {!padre&&hijos.length===0&&<div style={{fontSize:12,color:SUBTLE}}>Sin vínculos</div>}
         </Card>
       </div>
       {/* Actuaciones with visibility toggle */}
@@ -628,7 +631,7 @@ export default function Dashboard({ session }) {
           <CardTitle><IC.Clock /> Actuaciones ({acts.length})</CardTitle>
           <Btn v="secondary" small onClick={()=>setSubModal({type:"actuacion",expId:exp.id})}><IC.Plus /> Agregar</Btn>
         </div>
-        {acts.length===0?<div style={{fontSize:12,color:"rgba(200,184,138,0.25)",padding:"10px 0"}}>Sin actuaciones</div>:
+        {acts.length===0?<div style={{fontSize:12,color:SUBTLE,padding:"10px 0"}}>Sin actuaciones</div>:
         <div style={{overflowX:"auto",borderRadius:10,border:"1px solid rgba(184,150,62,0.06)"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr><Th>Fecha</Th><Th>Tipo</Th><Th>Descripción</Th><Th>Portal</Th><Th sx={{width:40}}></Th></tr></thead>
           <tbody>{acts.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(a=><tr key={a.id}>
@@ -671,7 +674,7 @@ export default function Dashboard({ session }) {
           <CardTitle><IC.File /> Documentos ({docs.length})</CardTitle>
           <Btn v="secondary" small onClick={()=>setSubModal({type:"documento",cliId:cli.id})}><IC.Plus /> Agregar</Btn>
         </div>
-        {docs.length===0?<div style={{fontSize:12,color:"rgba(200,184,138,0.25)"}}>Sin documentos</div>:
+        {docs.length===0?<div style={{fontSize:12,color:SUBTLE}}>Sin documentos</div>:
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
           {docs.map(d=><div key={d.id} style={{background:"rgba(184,150,62,0.03)",border:"1px solid rgba(184,150,62,0.08)",borderRadius:10,padding:14,position:"relative"}}>
             <div style={{display:"flex",gap:8}}><IC.File /><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:TEXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.nombre}</div><div style={{fontSize:11,color:MUTED,marginTop:3}}>{d.tipo} · {formatDate(d.fecha)}</div></div></div>
@@ -686,7 +689,7 @@ export default function Dashboard({ session }) {
       <Card style={{marginBottom:20}}><CardTitle><IC.Folder /> Expedientes ({exps.length})</CardTitle>
         {exps.map(e=>{const sc=estadoColors[e.estado]||{};return<div key={e.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(184,150,62,0.04)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>{e.urgente&&<span style={{width:8,height:8,borderRadius:4,background:"#EF5350",display:"inline-block"}}/>}<span style={{color:"#64B5F6",cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span><Badge color={sc.text} bg={sc.bg}>{e.estado}</Badge></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>{e.urgente&&<span style={{width:8,height:8,borderRadius:4,background:"#EF5350",display:"inline-block"}}/>}<span style={{color:LINK,cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:e.id})}>{e.numero}</span><Badge color={sc.text} bg={sc.bg}>{e.estado}</Badge></div>
             <span style={{fontSize:11,color:MUTED}}>{e.juzgado}</span>
           </div>
         </div>})}
@@ -704,8 +707,8 @@ export default function Dashboard({ session }) {
   const SearchResults = () => {
     if(!searchResults) return null
     return <Card style={{marginBottom:20}}><CardTitle><IC.Search /> {searchResults.total} resultado(s)</CardTitle>
-      {searchResults.exps.length>0&&<>{searchResults.exps.map(e=><div key={e.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(184,150,62,0.04)"}}><span style={{color:"#64B5F6",cursor:"pointer",fontWeight:600}} onClick={()=>{setDetail({type:"expediente",id:e.id});setSearch("")}}>{e.numero}</span><span style={{color:MUTED,fontSize:12,marginLeft:8}}>{getCli(e.cliente_id)?.nombre}</span></div>)}</>}
-      {searchResults.clis.length>0&&<>{searchResults.clis.map(c=><div key={c.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(184,150,62,0.04)"}}><span style={{color:"#64B5F6",cursor:"pointer",fontWeight:600}} onClick={()=>{setDetail({type:"cliente",id:c.id});setSearch("")}}>{c.nombre}</span></div>)}</>}
+      {searchResults.exps.length>0&&<>{searchResults.exps.map(e=><div key={e.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(184,150,62,0.04)"}}><span style={{color:LINK,cursor:"pointer",fontWeight:600}} onClick={()=>{setDetail({type:"expediente",id:e.id});setSearch("")}}>{e.numero}</span><span style={{color:MUTED,fontSize:12,marginLeft:8}}>{getCli(e.cliente_id)?.nombre}</span></div>)}</>}
+      {searchResults.clis.length>0&&<>{searchResults.clis.map(c=><div key={c.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(184,150,62,0.04)"}}><span style={{color:LINK,cursor:"pointer",fontWeight:600}} onClick={()=>{setDetail({type:"cliente",id:c.id});setSearch("")}}>{c.nombre}</span></div>)}</>}
       {searchResults.total===0&&<div style={{padding:16,textAlign:"center",color:MUTED}}>Sin resultados</div>}
     </Card>
   }
@@ -764,7 +767,7 @@ export default function Dashboard({ session }) {
             }
           </button>
         </div>
-        {!detail&&!search&&<div style={{fontSize:11,color:"rgba(200,184,138,0.3)",marginBottom:14,textTransform:"uppercase",letterSpacing:1.5}}>{titles[section]}</div>}
+        {!detail&&!search&&<div style={{fontSize:11,color:SUBTLE,marginBottom:14,textTransform:"uppercase",letterSpacing:1.5}}>{titles[section]}</div>}
         {renderContent()}
       </div>
     </main>
