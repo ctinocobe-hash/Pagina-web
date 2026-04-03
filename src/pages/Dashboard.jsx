@@ -208,7 +208,7 @@ export default function Dashboard({ session }) {
   // ===== FORMS =====
   const ExpForm = () => {
     const [f,sF]=useState({numero:"",tipo:"Contencioso Administrativo",materia:"Administrativa",cliente_id:"",juzgado:"",estado:"En trámite",urgente:false,fecha_inicio:today,proximo_plazo:"",notas:"",notas_cliente:"",expediente_padre_id:null,relacion:""})
-    const u=(k,v)=>sF({...f,[k]:v})
+    const u=(k,v)=>sF(p=>({...p,[k]:v}))
     return <>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio")u("estado","Radicación");else if(!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
       <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
@@ -234,7 +234,7 @@ export default function Dashboard({ session }) {
       proximo_plazo:exp.proximo_plazo||"",notas:exp.notas||"",notas_cliente:exp.notas_cliente||"",
       expediente_padre_id:exp.expediente_padre_id||null,relacion:exp.relacion||""
     })
-    const u=(k,v)=>sF({...f,[k]:v})
+    const u=(k,v)=>sF(p=>({...p,[k]:v}))
     return <>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio"&&!estadosSucesorio.includes(f.estado))u("estado","Radicación");else if(m!=="Sucesorio"&&!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
       <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
@@ -313,7 +313,7 @@ export default function Dashboard({ session }) {
     })
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
-    const u = (k, v) => { sF({...f, [k]: v}); setSaved(false) }
+    const u = (k, v) => { sF(p => ({...p, [k]: v})); setSaved(false) }
     const save = async () => {
       if (!f.portal_url || !f.usuario || !f.password) return
       setSaving(true)
