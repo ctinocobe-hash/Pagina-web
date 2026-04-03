@@ -63,17 +63,52 @@ async function syncUsuario(config) {
     .select('id, numero')
     .eq('user_id', user_id)
 
+  console.log(`[sync] Expedientes en BD: ${(expedientes || []).map(e => e.numero).join(', ')}`)
+
+  // Genera todas las variantes de normalización de un número de expediente
+  function variantes(num) {
+    if (!num) return []
+    const v = new Set()
+    v.add(num)
+    // Quitar espacios y guiones extra
+    const limpio = num.trim()
+    v.add(limpio)
+    // Quitar prefijo de letra (C-, P-, etc.)
+    const sinPrefijo = limpio.replace(/^[A-Za-z][-\s]?/, '')
+    v.add(sinPrefijo)
+    // Quitar ceros iniciales del número antes de /
+    v.add(limpio.replace(/^0+/, ''))
+    v.add(sinPrefijo.replace(/^0+/, ''))
+    // Normalizar año: 24 → 2024 y 2024 → 24
+    const expandirAnio = (s) => s.replace(/\/(\d{2})$/, (_, y) => `/20${y}`)
+    const contraerAnio = (s) => s.replace(/\/(20)(\d{2})$/, '/$2')
+    for (const base of [...v]) {
+      v.add(expandirAnio(base))
+      v.add(contraerAnio(base))
+    }
+    return [...v].filter(Boolean)
+  }
+
+  // Mapa: variante → expediente_id
   const expMap = {}
   for (const exp of (expedientes || [])) {
-    expMap[exp.numero] = exp.id
-    expMap[exp.numero.replace(/^0+/, '')] = exp.id
+    for (const v of variantes(exp.numero)) {
+      expMap[v] = exp.id
+      expMap[v.toLowerCase()] = exp.id
+    }
   }
 
   let insertadas = 0, duplicados = 0, sinExp = 0
 
   for (const n of notificaciones) {
-    const expId = expMap[n.expediente] || expMap[n.expediente.replace(/^0+/, '')]
-    if (!expId) { sinExp++; continue }
+    console.log(`[sync] Notificación del portal: expediente="${n.expediente}" fecha="${n.fecha}" tipo="${n.tipo}"`)
+    const buscar = variantes(n.expediente)
+    const expId = buscar.map(v => expMap[v] || expMap[v.toLowerCase()]).find(Boolean)
+    if (!expId) {
+      console.log(`[sync]   → Sin coincidencia. Variantes probadas: ${buscar.join(', ')}`)
+      sinExp++; continue
+    }
+    console.log(`[sync]   → Coincide con expediente_id=${expId}`)
 
     const { data: existe } = await supabase
       .from('actuaciones')
