@@ -3,6 +3,7 @@ import { supabase, db } from '../lib/supabase'
 import Portal from './portal'
 
 const materias = ["Administrativa", "Civil", "Mercantil", "Amparo", "Laboral", "Penal", "Familiar", "Sucesorio"]
+const tiposJuicio = ["Ordinario", "Especial", "Ejecutivo", "Oral", "Sumario", "Sucesorio", "Contencioso administrativo", "Amparo directo", "Amparo indirecto", "Familiar", "Otro"]
 const estadosProc = ["En trámite", "Alegatos", "Pruebas", "Sentencia", "Apelación", "Amparo", "Ejecución", "Concluido"]
 const estadosSucesorio = ["Radicación", "Declaratoria de herederos", "Inventarios y avalúos", "Administración de bienes", "Partición y adjudicación", "Liquidación", "Ejecución de convenio", "Concluido"]
 const relacionesTipo = ["Apelación", "Amparo directo", "Amparo indirecto", "Incidente", "Recurso de revisión", "Queja"]
@@ -210,7 +211,7 @@ export default function Dashboard({ session }) {
     const u=(k,v)=>sF({...f,[k]:v})
     return <>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio")u("estado","Radicación");else if(!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
-      <Input label="Tipo de juicio" value={f.tipo} onChange={e=>u("tipo",e.target.value)} />
+      <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
       <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
       <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Etapa / Estado" value={f.estado} onChange={e=>u("estado",e.target.value)}>{(f.materia==="Sucesorio"?estadosSucesorio:estadosProc).map(s=><option key={s}>{s}</option>)}</Sel><Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} /></div>
@@ -236,7 +237,7 @@ export default function Dashboard({ session }) {
     const u=(k,v)=>sF({...f,[k]:v})
     return <>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio"&&!estadosSucesorio.includes(f.estado))u("estado","Radicación");else if(m!=="Sucesorio"&&!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
-      <Input label="Tipo de juicio" value={f.tipo} onChange={e=>u("tipo",e.target.value)} />
+      <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
       <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
       <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Etapa / Estado" value={f.estado} onChange={e=>u("estado",e.target.value)}>{(f.materia==="Sucesorio"?estadosSucesorio:estadosProc).map(s=><option key={s}>{s}</option>)}</Sel><Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} /></div>
