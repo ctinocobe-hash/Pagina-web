@@ -104,16 +104,43 @@ async function syncUsuario(config) {
     console.log(`[sync] Notificación del portal: expediente="${n.expediente}" fecha="${n.fecha}" tipo="${n.tipo}"`)
     const buscar = variantes(n.expediente)
     const expId = buscar.map(v => expMap[v] || expMap[v.toLowerCase()]).find(Boolean)
-    if (!expId) {
-      console.log(`[sync]   → Sin coincidencia. Variantes probadas: ${buscar.join(', ')}`)
-      sinExp++; continue
+    let resolvedExpId = expId
+    if (!resolvedExpId) {
+      console.log(`[sync]   → Sin coincidencia en BD. Creando expediente automáticamente...`)
+      // Normalizar número: quitar ceros iniciales del número, expandir año
+      const numeroNorm = n.expediente
+        .replace(/^([A-Za-z]+)-?(\d+)\/(\d{2})$/, (_, letra, num, anio) =>
+          `${letra}-${parseInt(num, 10)}/${anio}`)
+        .replace(/^(\d+)\/(\d{2})$/, (_, num, anio) => `${parseInt(num, 10)}/${anio}`)
+      const { data: nuevo, error: errExp } = await supabase
+        .from('expedientes')
+        .insert({
+          user_id,
+          equipo_id: config.equipo_id || null,
+          numero: numeroNorm || n.expediente,
+          tipo: 'Por definir',
+          materia: 'Civil',
+          estado: 'En trámite',
+        })
+        .select('id')
+        .single()
+      if (errExp) {
+        console.error(`[sync]   → Error creando expediente: ${errExp.message}`)
+        sinExp++; continue
+      }
+      resolvedExpId = nuevo.id
+      // Agregar al mapa para siguientes iteraciones
+      expMap[n.expediente] = resolvedExpId
+      expMap[n.expediente.toLowerCase()] = resolvedExpId
+      console.log(`[sync]   → Expediente creado: ${numeroNorm} (id=${resolvedExpId})`)
+    } else {
+      console.log(`[sync]   → Coincide con expediente_id=${resolvedExpId}`)
     }
-    console.log(`[sync]   → Coincide con expediente_id=${expId}`)
 
     const { data: existe } = await supabase
       .from('actuaciones')
       .select('id')
-      .eq('expediente_id', expId)
+      .eq('expediente_id', resolvedExpId)
       .eq('fecha', n.fecha)
       .eq('origen', 'portal_judicial')
       .ilike('descripcion', `${n.descripcion.substring(0, 100)}%`)
@@ -123,9 +150,9 @@ async function syncUsuario(config) {
 
     const { error } = await supabase.from('actuaciones').insert({
       user_id,
-      expediente_id: expId,
+      expediente_id: resolvedExpId,
       fecha: n.fecha,
-      tipo: n.tipo || 'Acuerdo',
+      tipo: 'Acuerdo',
       descripcion: n.descripcion,
       origen: 'portal_judicial',
       visible_portal: true,

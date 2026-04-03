@@ -257,9 +257,10 @@ async function scrapearNotificaciones(credenciales, fechaInicio = null, fechaFin
         for (const fila of filas) {
           const celdas = fila.querySelectorAll('td')
           if (celdas.length < 4) continue
-          const juzgado    = celdas[0]?.innerText?.trim() || ''
-          const expediente = celdas[1]?.innerText?.trim() || ''
-          const resumen    = celdas[2]?.innerText?.trim() || ''
+          // Columnas reales del portal: Expediente | Descripción/Resumen | Fecha
+          const expediente = celdas[0]?.innerText?.trim() || ''
+          const resumen    = celdas[1]?.innerText?.trim() || ''
+          const juzgado    = celdas[2]?.innerText?.trim() || ''
           const fechaAuto  = celdas[3]?.innerText?.trim() || ''
           if (!expediente && !resumen) continue
           resultados.push({ expediente, fecha: fechaAuto, tipo: juzgado, descripcion: resumen })
