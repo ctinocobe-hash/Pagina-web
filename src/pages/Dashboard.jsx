@@ -214,8 +214,7 @@ export default function Dashboard({ session }) {
       <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
       <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
       <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Etapa / Estado" value={f.estado} onChange={e=>u("estado",e.target.value)}>{(f.materia==="Sucesorio"?estadosSucesorio:estadosProc).map(s=><option key={s}>{s}</option>)}</Sel><Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} /></div>
-      {f.materia==="Sucesorio"&&<div style={{background:"rgba(184,150,62,0.05)",border:"1px solid rgba(184,150,62,0.12)",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:GOLD}}>Juicio sucesorio — las etapas y tipos de incidentes se adaptarán automáticamente</div>}
+      <Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} />
       <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",e.target.value)} />
       <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",e.target.value)} />
       <Card style={{marginBottom:14}}><CardTitle><IC.Link /> Vincular expediente padre</CardTitle>
@@ -240,7 +239,7 @@ export default function Dashboard({ session }) {
       <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
       <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
       <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Etapa / Estado" value={f.estado} onChange={e=>u("estado",e.target.value)}>{(f.materia==="Sucesorio"?estadosSucesorio:estadosProc).map(s=><option key={s}>{s}</option>)}</Sel><Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} /></div>
+      <Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} />
       <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",e.target.value)} />
       <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",e.target.value)} />
       <Card style={{marginBottom:14}}><CardTitle><IC.Link /> Vincular expediente padre</CardTitle>
@@ -409,7 +408,7 @@ export default function Dashboard({ session }) {
         <Td sx={{fontSize:12}}>{e.tipo}</Td>
         <Td><span style={{cursor:"pointer"}} onClick={()=>setDetail({type:"cliente",id:e.cliente_id})}>{getCli(e.cliente_id)?.nombre}</span></Td>
         <Td sx={{fontSize:11}}>{e.juzgado}</Td>
-        <Td><Badge color={sc.text} bg={sc.bg}>{e.estado}</Badge></Td>
+        <Td><div style={{display:"flex",flexDirection:"column",gap:4}}><Badge color={sc.text} bg={sc.bg}>{e.estado}</Badge><span style={{fontSize:11,color:GOLD,cursor:"pointer",fontWeight:600}} onClick={()=>setDetail({type:"expediente",id:e.id})}>Ver</span></div></Td>
         <Td sx={{fontSize:12,fontWeight:600,color:days===null?MUTED:days<0?"#EF9A9A":days<=5?"#FFD54F":"#81C784"}}>{e.proximo_plazo?`${formatDate(e.proximo_plazo)} (${days<0?Math.abs(days)+"d v.":days+"d"})`:"—"}</Td>
         <Td><div style={{display:"flex",gap:2}}><EditBtn onClick={()=>setSubModal({type:"editExp",exp:e})} /><DelBtn onClick={()=>handleDelExp(e.id)} /></div></Td>
       </tr>})}</tbody></table>
