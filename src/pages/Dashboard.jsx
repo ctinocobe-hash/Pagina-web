@@ -65,7 +65,9 @@ const IC = {
 }
 
 export default function Dashboard({ session }) {
-  const [section, setSection] = useState("dashboard")
+  const VALID_SECTIONS = ["dashboard","expedientes","clientes","vencimientos","cobranza","portal"]
+  const hashSection = window.location.hash.replace('#','')
+  const [section, setSection] = useState(VALID_SECTIONS.includes(hashSection) ? hashSection : "dashboard")
   const [sidebar, setSidebar] = useState(false)
   const [search, setSearch] = useState("")
   const [detail, setDetail] = useState(null)
@@ -731,7 +733,7 @@ export default function Dashboard({ session }) {
         </div>
       </div>
       <nav style={{padding:"12px 10px",flex:1}}>
-        {navItems.map(n=>{const act=section===n.key&&!detail;return<button key={n.key} onClick={()=>{setSection(n.key);setDetail(null);setSearch("");setSidebar(false)}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",marginBottom:2,background:act?"rgba(184,150,62,0.08)":"transparent",border:act?`1px solid rgba(184,150,62,0.12)`:"1px solid transparent",borderRadius:10,color:act?GOLD:MUTED,fontSize:13,fontWeight:act?600:500,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}><n.icon />{n.label}</button>})}
+        {navItems.map(n=>{const act=section===n.key&&!detail;return<button key={n.key} onClick={()=>{setSection(n.key);setDetail(null);setSearch("");setSidebar(false);window.location.hash=n.key}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",marginBottom:2,background:act?"rgba(184,150,62,0.08)":"transparent",border:act?`1px solid rgba(184,150,62,0.12)`:"1px solid transparent",borderRadius:10,color:act?GOLD:MUTED,fontSize:13,fontWeight:act?600:500,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}><n.icon />{n.label}</button>})}
       </nav>
       <div style={{padding:"12px 10px",borderTop:"1px solid rgba(184,150,62,0.08)"}}>
         <div style={{fontSize:10,color:MUTED,marginBottom:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",padding:"0 4px"}}>{userName}</div>
