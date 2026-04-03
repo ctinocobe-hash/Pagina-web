@@ -35,8 +35,9 @@ function App() {
   }
 
   if (loading) {
+    const dark = localStorage.getItem('tema') !== 'claro'
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0D0D0D' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: dark ? '#0D0D0D' : '#F2F1ED' }}>
         <svg width="56" height="56" viewBox="0 0 96 76" fill="none" stroke="#B8963E" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.85 }}>
           <line x1="48" y1="0" x2="48" y2="64" strokeWidth="3.2"/><line x1="12" y1="10" x2="84" y2="10" strokeWidth="3.2"/>
           <circle cx="12" cy="10" r="4" strokeWidth="2.8" fill="#B8963E"/><line x1="12" y1="14" x2="12" y2="32" strokeWidth="2.6"/>
