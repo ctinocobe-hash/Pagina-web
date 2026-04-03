@@ -744,8 +744,7 @@ export default function Dashboard({ session }) {
       <header style={{padding:"12px 20px",borderBottom:"1px solid rgba(184,150,62,0.06)",display:"flex",alignItems:"center",gap:12}}>
         <button onClick={()=>setSidebar(!sidebar)} style={{background:"none",border:"none",color:GOLD,cursor:"pointer",padding:4,flexShrink:0}}><IC.Menu /></button>
         <div style={{flex:1,position:"relative"}}>
-          <IC.Search style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"rgba(184,150,62,0.3)"}} />
-          <input value={search} onChange={e=>{setSearch(e.target.value);if(detail)setDetail(null)}} placeholder="Buscar..." style={{width:"100%",padding:"9px 12px 9px 36px",background:"rgba(184,150,62,0.04)",border:"1px solid rgba(184,150,62,0.08)",borderRadius:10,color:TEXT,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}} />
+          <input value={search} onChange={e=>{setSearch(e.target.value);if(detail)setDetail(null)}} placeholder="Buscar" style={{width:"100%",padding:"9px 12px",background:"rgba(184,150,62,0.04)",border:"1px solid rgba(184,150,62,0.08)",borderRadius:10,color:TEXT,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}} />
           {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:MUTED,cursor:"pointer"}}><IC.X /></button>}
         </div>
       </header>
