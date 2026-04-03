@@ -11,8 +11,8 @@ const actTipos = ["Presentación", "Acuerdo", "Auto", "Sentencia", "Notificació
 const incidentesSucesorio = ["Reconocimiento de heredero", "Remoción de albacea", "Rendición de cuentas del albacea", "Oposición al inventario", "Oposición al avalúo", "Nombramiento de albacea", "Sustitución de albacea", "Liquidación de sociedad conyugal", "Petición de herencia", "Intervención de acreedor", "Nulidad de inventario", "Separación de patrimonio", "Otro incidente sucesorio"]
 const docTipos = ["Contrato", "Recibo de pago", "Poder notarial", "Identificación", "Comprobante domicilio", "CURP", "RFC", "Escritura", "Otro"]
 
-const BG = "#0D0D0D"; const SURFACE = "#1A1A1A"; const GOLD = "#B8963E"; const GOLD_LIGHT = "#D4AF5C"
-const TEXT = "#F5F0E8"; const MUTED = "#A09882"; const FT = "'Cormorant Garamond', serif"
+const GOLD = "#B8963E"; const GOLD_LIGHT = "#D4AF5C"
+const FT = "'Cormorant Garamond', serif"
 const FB = "'Source Serif 4', serif"; const FU = "'DM Sans', sans-serif"
 
 const estadoColors = {
@@ -66,6 +66,13 @@ const IC = {
 }
 
 export default function Dashboard({ session }) {
+  const [dark, setDark] = useState(() => localStorage.getItem('tema') !== 'claro')
+  const BG      = dark ? "#0D0D0D" : "#F2F1ED"
+  const SURFACE = dark ? "#1A1A1A" : "#FFFFFF"
+  const TEXT    = dark ? "#F5F0E8" : "#1A1A1A"
+  const MUTED   = dark ? "#A09882" : "#6B6050"
+  const toggleTema = () => setDark(d => { const n=!d; localStorage.setItem('tema',n?'oscuro':'claro'); return n })
+
   const VALID_SECTIONS = ["dashboard","expedientes","clientes","vencimientos","cobranza","portal"]
   const hashSection = window.location.hash.replace('#','')
   const [section, setSection] = useState(VALID_SECTIONS.includes(hashSection) ? hashSection : "dashboard")
@@ -749,6 +756,14 @@ export default function Dashboard({ session }) {
         </div>
       </header>
       <div style={{padding:"16px 20px"}}>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+          <button onClick={toggleTema} title={dark?"Cambiar a modo claro":"Cambiar a modo oscuro"} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",background:"transparent",border:`1px solid rgba(184,150,62,0.2)`,borderRadius:20,color:MUTED,fontSize:11,fontFamily:"inherit",cursor:"pointer",letterSpacing:0.5}}>
+            {dark
+              ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Modo claro</>
+              : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Modo oscuro</>
+            }
+          </button>
+        </div>
         {!detail&&!search&&<div style={{fontSize:11,color:"rgba(200,184,138,0.3)",marginBottom:14,textTransform:"uppercase",letterSpacing:1.5}}>{titles[section]}</div>}
         {renderContent()}
       </div>
