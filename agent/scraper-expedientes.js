@@ -494,14 +494,29 @@ async function descargarPdf(page, pdfUrl, filename) {
 }
 
 /**
+ * Dado un array de documentos, devuelve solo el más reciente por cada tipo.
+ * Útil para consulta masiva donde no se quiere traer todo el historial.
+ */
+function filtrarSoloRecientes(docs) {
+  const porTipo = {}
+  for (const doc of docs) {
+    const tipo = doc.tipo || 'Documento'
+    if (!porTipo[tipo] || doc.fecha > porTipo[tipo].fecha) {
+      porTipo[tipo] = doc
+    }
+  }
+  return Object.values(porTipo)
+}
+
+/**
  * Función principal: Consulta masiva de expedientes
  * @param {object} credenciales - { usuario, password }
  * @param {Array} expedientes - [{ numero, juzgado }]
- * @param {object} opciones - { descargarPdfs: boolean }
+ * @param {object} opciones - { descargarPdfs: boolean, soloRecientes: boolean }
  * @returns {object} - Resultados por expediente
  */
 async function consultarExpedientes(credenciales, expedientes, opciones = {}) {
-  const { descargarPdfs = false } = opciones
+  const { descargarPdfs = false, soloRecientes = false } = opciones
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -550,6 +565,14 @@ async function consultarExpedientes(credenciales, expedientes, opciones = {}) {
               doc.localPath = await descargarPdf(page, doc.pdfUrl, pdfFilename)
             }
           }
+        }
+
+        // Si soloRecientes, filtrar a únicamente el doc más reciente por tipo
+        if (soloRecientes) {
+          resultado.acuerdos = filtrarSoloRecientes(resultado.acuerdos)
+          resultado.promociones = filtrarSoloRecientes(resultado.promociones)
+          resultado.contestaciones = filtrarSoloRecientes(resultado.contestaciones)
+          resultado.otros = filtrarSoloRecientes(resultado.otros)
         }
 
         resultados[exp.numero] = {
