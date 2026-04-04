@@ -76,7 +76,7 @@ export default function Dashboard({ session }) {
   const TD_CLR = dark ? "#D4CCBC"              : "#3D342A"
   const SUBTLE = dark ? "rgba(200,184,138,0.3)": "#9B8C7C"
 
-  const VALID_SECTIONS = ["dashboard","expedientes","clientes","vencimientos","cobranza","portal","consultas","notificaciones"]
+  const VALID_SECTIONS = ["dashboard","expedientes","clientes","vencimientos","cobranza","portal","notificaciones"]
   const hashSection = window.location.hash.replace('#','')
   const [section, setSection] = useState(VALID_SECTIONS.includes(hashSection) ? hashSection : "dashboard")
   const [sidebar, setSidebar] = useState(false)
@@ -96,19 +96,17 @@ export default function Dashboard({ session }) {
   const [portalConfig, setPortalConfig] = useState(null)
   const [syncStatus, setSyncStatus] = useState(null) // { loading, result, error }
   const [agenteActivo, setAgenteActivo] = useState(null) // null=sin verificar, true/false
-  const [documentosJudicial, setDocumentosJudicial] = useState([])
 
   const loadData = useCallback(async () => {
     try {
-      const [cli,exp,act,doc,cob,actv,pc,cfg,dj] = await Promise.all([
+      const [cli,exp,act,doc,cob,actv,pc,cfg] = await Promise.all([
         db.getClientes(), db.getExpedientes(), db.getAllActuaciones(),
         db.getAllDocumentos(), db.getCobros(), db.getActividad(30),
-        db.getPortalClientes(), db.getConfiguracionPortal(),
-        db.getAllDocumentosJudicial().catch(()=>[])
+        db.getPortalClientes(), db.getConfiguracionPortal()
       ])
       setClientes(cli); setExpedientes(exp); setActuaciones(act)
       setDocumentos(doc); setCobros(cob); setActividad(actv)
-      setPortalClientes(pc); setPortalConfig(cfg); setDocumentosJudicial(dj)
+      setPortalClientes(pc); setPortalConfig(cfg)
     } catch(e){ console.error(e) }
     setLoading(false)
   }, [])
@@ -168,10 +166,6 @@ export default function Dashboard({ session }) {
     const ok = await db.verificarAgente()
     setAgenteActivo(ok)
   }
-
-  // Consulta de expedientes (datos de BD, sincronización automática vía GitHub Actions)
-  const handleDelDocJudicial = async (id) => { await db.deleteDocumentoJudicial(id); loadData() }
-  const handleToggleVisDocJudicial = async (id, current) => { await db.toggleVisDocJudicial(id, current); loadData() }
 
   // Metrics
   const expActivos = expedientes.filter(e=>e.estado!=="Concluido").length
@@ -564,119 +558,6 @@ export default function Dashboard({ session }) {
     </div>
   }
 
-  // ===== CONSULTAS JUDICIALES (Servicios Virtuales) =====
-  const renderConsultasJudiciales = () => {
-    const cfg = portalConfig
-    const ultConsulta = cfg?.ultima_consulta_expedientes ? new Date(cfg.ultima_consulta_expedientes).toLocaleString('es-MX') : null
-    const ultRes = cfg?.ultimo_resultado_expedientes
-
-    // Agrupar documentos por tipo
-    const acuerdos = documentosJudicial.filter(d => d.tipo === 'Acuerdo')
-    const promociones = documentosJudicial.filter(d => d.tipo === 'Promoción')
-    const contestaciones = documentosJudicial.filter(d => d.tipo === 'Contestación')
-    const otrosDoc = documentosJudicial.filter(d => !['Acuerdo','Promoción','Contestación'].includes(d.tipo))
-
-    // Componente de fila de documento con PDF
-    const DocRow = ({doc}) => {
-      const exp = expedientes.find(e => e.id === doc.expediente_id)
-      const tipoBg = doc.tipo === 'Acuerdo' ? {bg:"#E3F2FD",text:"#1565C0"}
-        : doc.tipo === 'Promoción' ? {bg:"#FFF3E0",text:"#E65100"}
-        : doc.tipo === 'Contestación' ? {bg:"#F3E5F5",text:"#7B1FA2"}
-        : doc.tipo === 'Sentencia' ? {bg:"#E8F5E9",text:"#2E7D32"}
-        : {bg:"rgba(184,150,62,0.12)",text:GOLD}
-      return <tr>
-        <Td sx={{fontWeight:600}}>
-          <span style={{color:LINK,cursor:"pointer"}} onClick={()=>setDetail({type:"expediente",id:doc.expediente_id})}>
-            {exp?.numero||"—"}
-          </span>
-        </Td>
-        <Td sx={{whiteSpace:"nowrap",fontSize:12}}>{formatDate(doc.fecha)}</Td>
-        <Td><Badge color={tipoBg.text} bg={tipoBg.bg}>{doc.tipo}</Badge></Td>
-        <Td sx={{fontSize:12,maxWidth:300,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.descripcion?.substring(0,120)||"—"}</Td>
-        <Td>
-          {doc.pdf_url ? (
-            <a href={doc.pdf_url} target="_blank" rel="noopener noreferrer" style={{color:LINK,fontSize:12,display:"inline-flex",alignItems:"center",gap:4,textDecoration:"none"}}>
-              <IC.File /> PDF
-            </a>
-          ) : (doc.pdf_links?.length > 0 ? (
-            <div style={{display:"flex",gap:4}}>
-              {doc.pdf_links.map((url,i) => (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{color:LINK,fontSize:11,textDecoration:"none"}}>
-                  <IC.File />
-                </a>
-              ))}
-            </div>
-          ) : <span style={{fontSize:11,color:MUTED}}>—</span>)}
-        </Td>
-        <Td><VisToggle visible={doc.visible_portal} onClick={()=>handleToggleVisDocJudicial(doc.id,doc.visible_portal)} /></Td>
-        <Td><DelBtn onClick={()=>handleDelDocJudicial(doc.id)} /></Td>
-      </tr>
-    }
-
-    // Tabla de documentos por categoría
-    const DocTable = ({docs, titulo, icon}) => {
-      if (!docs.length) return null
-      return <Card style={{marginBottom:16}}>
-        <CardTitle>{icon} {titulo} ({docs.length})</CardTitle>
-        <div style={{overflowX:"auto",borderRadius:10,border:"1px solid rgba(184,150,62,0.06)"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-            <thead><tr><Th>Expediente</Th><Th>Fecha</Th><Th>Tipo</Th><Th>Descripción</Th><Th>PDF</Th><Th>Portal</Th><Th></Th></tr></thead>
-            <tbody>{docs.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(d=><DocRow key={d.id} doc={d} />)}</tbody>
-          </table>
-        </div>
-      </Card>
-    }
-
-    return <div>
-      {/* Estado de automatización */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"10px 14px",background:"rgba(129,199,132,0.06)",borderRadius:10,border:"1px solid rgba(129,199,132,0.2)"}}>
-        <div style={{width:9,height:9,borderRadius:"50%",background:"#81C784",flexShrink:0,boxShadow:"0 0 6px #81C78455"}} />
-        <div style={{flex:1}}>
-          <span style={{fontSize:12,color:TEXT,fontWeight:600}}>Sincronización automática activa </span>
-          <span style={{fontSize:12,color:MUTED}}>— lunes a viernes a las 10:00 am (solo actuación más reciente por tipo por expediente)</span>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20}}>
-        <Stat value={documentosJudicial.length} label="Documentos totales" />
-        <Stat value={acuerdos.length} label="Acuerdos" accent="#1565C0" />
-        <Stat value={promociones.length} label="Promociones" accent="#E65100" />
-        <Stat value={contestaciones.length} label="Contestaciones" accent="#7B1FA2" />
-      </div>
-
-      {/* Última sincronización */}
-      {ultConsulta && <Card style={{marginBottom:20}}>
-        <CardTitle><IC.Sync /> Última sincronización de expedientes</CardTitle>
-        <div style={{fontSize:12,color:MUTED,marginBottom:12}}>Ejecutada el {ultConsulta}</div>
-        {ultRes && (
-          <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
-            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:GOLD}}>{ultRes.expedientes_consultados}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Expedientes</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#1565C0"}}>{ultRes.documentos_encontrados}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Encontrados</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#81C784"}}>{ultRes.documentos_insertados}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Nuevos</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{ultRes.duplicados_omitidos}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Duplicados</div></div>
-          </div>
-        )}
-      </Card>}
-
-      {/* Tablas de documentos por categoría */}
-      <DocTable docs={acuerdos} titulo="Acuerdos" icon={<IC.File />} />
-      <DocTable docs={promociones} titulo="Promociones" icon={<IC.File />} />
-      <DocTable docs={contestaciones} titulo="Contestaciones" icon={<IC.File />} />
-      <DocTable docs={otrosDoc} titulo="Otros documentos" icon={<IC.File />} />
-
-      {documentosJudicial.length === 0 && (
-        <Card>
-          <div style={{textAlign:"center",padding:"30px 20px",color:MUTED}}>
-            <IC.File />
-            <div style={{fontSize:13,marginTop:10}}>No hay documentos judiciales aún.</div>
-            <div style={{fontSize:12,marginTop:4}}>Los documentos se obtienen automáticamente del portal de Servicios Virtuales cada día hábil a las 10:00 am.</div>
-          </div>
-        </Card>
-      )}
-    </div>
-  }
-
   // ===== PORTAL MANAGEMENT =====
   const renderPortal = () => <div>
     <div style={{marginBottom:24}}>
@@ -832,13 +713,12 @@ export default function Dashboard({ session }) {
     </Card>
   }
 
-  const sections_map = {dashboard:renderDashboard,expedientes:renderExpedientes,clientes:renderClientes,vencimientos:renderVencimientos,cobranza:renderCobranza,portal:renderPortal,notificaciones:renderNotificaciones,consultas:renderConsultasJudiciales}
-  const titles = {dashboard:"Dashboard",expedientes:"Expedientes",clientes:"Clientes",vencimientos:"Vencimientos",cobranza:"Cobranza",portal:"Portal de Clientes",notificaciones:"Portal Judicial",consultas:"Consultas Judiciales"}
+  const sections_map = {dashboard:renderDashboard,expedientes:renderExpedientes,clientes:renderClientes,vencimientos:renderVencimientos,cobranza:renderCobranza,portal:renderPortal,notificaciones:renderNotificaciones}
+  const titles = {dashboard:"Dashboard",expedientes:"Expedientes",clientes:"Clientes",vencimientos:"Vencimientos",cobranza:"Cobranza",portal:"Portal de Clientes",notificaciones:"Portal Judicial"}
   const navItems = [
     {key:"dashboard",label:"Dashboard",icon:IC.Dashboard},{key:"expedientes",label:"Expedientes",icon:IC.Folder},{key:"clientes",label:"Clientes",icon:IC.Users},
     {key:"vencimientos",label:"Vencimientos",icon:IC.Calendar},{key:"cobranza",label:"Cobranza",icon:IC.Dollar},
-    {key:"notificaciones",label:"Portal Judicial",icon:IC.Sync},{key:"consultas",label:"Consultas Judiciales",icon:IC.File},
-    {key:"portal",label:"Portal Clientes",icon:IC.Portal},
+    {key:"notificaciones",label:"Portal Judicial",icon:IC.Sync},{key:"portal",label:"Portal Clientes",icon:IC.Portal},
   ]
 
   const renderContent = () => {

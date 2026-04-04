@@ -10,7 +10,6 @@
 require('dotenv').config()
 const { createClient } = require('@supabase/supabase-js')
 const { scrapearNotificaciones } = require('./scraper')
-const { consultarExpedientes } = require('./scraper-expedientes')
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -177,148 +176,6 @@ async function syncUsuario(config) {
   console.log(`[sync] Listo: ${insertadas} insertadas, ${duplicados} duplicados, ${sinExp} sin expediente`)
 }
 
-/**
- * Consulta de expedientes en Servicios Virtuales para un usuario.
- * Descarga los PDFs y los sube a Supabase Storage.
- * Solo trae la actuación más reciente por tipo por expediente.
- */
-async function syncExpedientesUsuario(config) {
-  const { user_id, usuario, password } = config
-  console.log(`\n[sync-expedientes] Usuario: ${user_id}`)
-
-  // Asegurar que el bucket existe
-  const { data: buckets } = await supabase.storage.listBuckets()
-  if (!buckets?.find(b => b.id === 'documentos-judicial')) {
-    const { error: bucketErr } = await supabase.storage.createBucket('documentos-judicial', {
-      public: false,
-      fileSizeLimit: 20971520, // 20MB
-    })
-    if (bucketErr && !bucketErr.message?.includes('already exists')) {
-      console.error(`[sync-expedientes] Error creando bucket: ${bucketErr.message}`)
-    } else {
-      console.log('[sync-expedientes] Bucket documentos-judicial creado')
-    }
-  }
-
-  // Obtener expedientes activos del usuario
-  const { data: expedientes } = await supabase
-    .from('expedientes')
-    .select('id, numero, juzgado')
-    .eq('user_id', user_id)
-    .neq('estado', 'Concluido')
-
-  if (!expedientes?.length) {
-    console.log('[sync-expedientes] No hay expedientes activos, omitiendo')
-    return
-  }
-
-  console.log(`[sync-expedientes] ${expedientes.length} expedientes activos a consultar`)
-
-  let resultados
-  try {
-    resultados = await consultarExpedientes(
-      { usuario, password },
-      expedientes.map(e => ({ numero: e.numero, juzgado: e.juzgado || '' })),
-      { soloRecientes: true, descargarPdfs: true }
-    )
-  } catch (err) {
-    console.error(`[sync-expedientes] Error en scraping: ${err.message}`)
-    return
-  }
-
-  let totalInsertados = 0, totalDuplicados = 0, totalDocs = 0, totalPdfs = 0
-
-  for (const [numero, resultado] of Object.entries(resultados)) {
-    if (!resultado.success) {
-      console.error(`[sync-expedientes] Error en ${numero}: ${resultado.error}`)
-      continue
-    }
-
-    const exp = expedientes.find(e => e.numero === numero)
-    if (!exp) continue
-
-    const allDocs = [
-      ...resultado.acuerdos,
-      ...resultado.promociones,
-      ...resultado.contestaciones,
-      ...resultado.otros
-    ]
-    totalDocs += allDocs.length
-
-    for (const doc of allDocs) {
-      const descCorta = (doc.descripcion || '').substring(0, 100)
-      const { data: existe } = await supabase
-        .from('documentos_judicial')
-        .select('id')
-        .eq('expediente_id', exp.id)
-        .eq('fecha', doc.fecha)
-        .eq('tipo', doc.tipo)
-        .ilike('descripcion', `${descCorta}%`)
-        .limit(1)
-
-      if (existe?.length > 0) { totalDuplicados++; continue }
-
-      // Subir PDF a Supabase Storage si hay buffer
-      let storagePdfUrl = null
-      if (doc.pdfBuffer) {
-        const safeNumero = numero.replace(/[^a-zA-Z0-9]/g, '_')
-        const safeTipo = (doc.tipo || 'doc').replace(/[^a-zA-Z0-9]/g, '_')
-        const storagePath = `${user_id}/${safeNumero}/${safeTipo}_${doc.fecha || 'sin-fecha'}.pdf`
-
-        const { data: uploadData, error: uploadErr } = await supabase.storage
-          .from('documentos-judicial')
-          .upload(storagePath, doc.pdfBuffer, {
-            contentType: 'application/pdf',
-            upsert: true,
-          })
-
-        if (uploadErr) {
-          console.error(`[sync-expedientes] Error subiendo PDF: ${uploadErr.message}`)
-        } else {
-          // Generar URL firmada válida por 365 días
-          const { data: urlData } = await supabase.storage
-            .from('documentos-judicial')
-            .createSignedUrl(storagePath, 365 * 24 * 60 * 60)
-
-          storagePdfUrl = urlData?.signedUrl || null
-          if (storagePdfUrl) totalPdfs++
-          console.log(`[sync-expedientes] PDF subido: ${storagePath}`)
-        }
-      }
-
-      const { error } = await supabase.from('documentos_judicial').insert({
-        user_id,
-        expediente_id: exp.id,
-        fecha: doc.fecha,
-        tipo: doc.tipo,
-        descripcion: doc.descripcion,
-        pdf_url: storagePdfUrl || doc.pdfUrl || null,
-        pdf_links: doc.pdfLinks || [],
-        storage_path: storagePdfUrl ? `${user_id}/${numero.replace(/[^a-zA-Z0-9]/g, '_')}/${(doc.tipo || 'doc').replace(/[^a-zA-Z0-9]/g, '_')}_${doc.fecha || 'sin-fecha'}.pdf` : null,
-        origen: 'portal_servicios_virtuales',
-        visible_portal: true,
-      })
-
-      if (error) console.error(`[sync-expedientes] Error insertando: ${error.message}`)
-      else totalInsertados++
-    }
-  }
-
-  // Guardar resultado
-  await supabase.from('configuracion_portal').update({
-    ultima_consulta_expedientes: new Date().toISOString(),
-    ultimo_resultado_expedientes: {
-      expedientes_consultados: Object.keys(resultados).length,
-      documentos_encontrados: totalDocs,
-      documentos_insertados: totalInsertados,
-      duplicados_omitidos: totalDuplicados,
-      pdfs_subidos: totalPdfs,
-    }
-  }).eq('user_id', user_id)
-
-  console.log(`[sync-expedientes] Listo: ${totalInsertados} insertados, ${totalPdfs} PDFs subidos, ${totalDuplicados} duplicados`)
-}
-
 async function main() {
   console.log('[sync-actions] Iniciando sincronización del portal judicial...')
 
@@ -335,10 +192,7 @@ async function main() {
   console.log(`[sync-actions] ${configs.length} usuario(s) con portal configurado`)
 
   for (const config of configs) {
-    // 1. Sincronizar notificaciones (SIGE)
     await syncUsuario(config)
-    // 2. Consultar expedientes (Servicios Virtuales) — solo más recientes
-    await syncExpedientesUsuario(config)
   }
 
   console.log('\n[sync-actions] Sincronización completada.')

@@ -330,39 +330,4 @@ export const db = {
       return false
     }
   },
-
-  // ============================================
-  // CONSULTA DE EXPEDIENTES (Servicios Virtuales)
-  // ============================================
-
-  async getDocumentosJudicial(expedienteId = null) {
-    let query = supabase.from('documentos_judicial').select('*').order('fecha', { ascending: false })
-    if (expedienteId) query = query.eq('expediente_id', expedienteId)
-    const { data, error } = await query
-    if (error) throw error
-    return data || []
-  },
-
-  async getAllDocumentosJudicial() {
-    const { data, error } = await supabase
-      .from('documentos_judicial')
-      .select('*')
-      .order('fecha', { ascending: false })
-    if (error) throw error
-    return data || []
-  },
-
-  async deleteDocumentoJudicial(id) {
-    const { error } = await supabase.from('documentos_judicial').delete().eq('id', id)
-    if (error) throw error
-  },
-
-  async toggleVisDocJudicial(id, visible) {
-    const { error } = await supabase
-      .from('documentos_judicial')
-      .update({ visible_portal: !visible })
-      .eq('id', id)
-    if (error) throw error
-  },
-
 }
