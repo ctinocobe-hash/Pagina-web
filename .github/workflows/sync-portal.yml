@@ -4,9 +4,9 @@ on:
   # Activación manual desde GitHub.com → Actions → Run workflow
   workflow_dispatch:
 
-  # Automático: lunes a viernes a las 8am hora de México (14:00 UTC)
+  # Automático: lunes a viernes a las 10am hora de México (16:00 UTC)
   schedule:
-    - cron: '0 14 * * 1-5'
+    - cron: '0 16 * * 1-5'
 
 jobs:
   sync:

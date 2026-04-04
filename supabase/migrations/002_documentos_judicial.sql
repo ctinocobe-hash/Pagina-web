@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS documentos_judicial (
   descripcion TEXT,
   pdf_url TEXT,             -- URL del PDF en el portal judicial
   pdf_links JSONB DEFAULT '[]', -- Array de URLs de PDFs asociados
-  local_path TEXT,          -- Ruta local si fue descargado
+  storage_path TEXT,        -- Ruta en Supabase Storage (documentos-judicial bucket)
   origen TEXT DEFAULT 'portal_servicios_virtuales',
   visible_portal BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -40,3 +40,12 @@ CREATE POLICY "Users can delete own documentos_judicial" ON documentos_judicial
 ALTER TABLE configuracion_portal
   ADD COLUMN IF NOT EXISTS ultima_consulta_expedientes TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS ultimo_resultado_expedientes JSONB;
+
+-- ─── Storage bucket para PDFs judiciales ─────────────────────────────────────
+-- (El bucket se crea automáticamente desde sync-actions.js si no existe)
+-- Para crearlo manualmente:
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('documentos-judicial', 'documentos-judicial', false);
+-- CREATE POLICY "Users can view own judicial docs" ON storage.objects FOR SELECT
+--   USING (bucket_id = 'documentos-judicial' AND auth.uid()::text = (storage.foldername(name))[1]);
+-- CREATE POLICY "Service role can upload judicial docs" ON storage.objects FOR INSERT
+--   WITH CHECK (bucket_id = 'documentos-judicial');

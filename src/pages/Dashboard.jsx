@@ -97,8 +97,6 @@ export default function Dashboard({ session }) {
   const [syncStatus, setSyncStatus] = useState(null) // { loading, result, error }
   const [agenteActivo, setAgenteActivo] = useState(null) // null=sin verificar, true/false
   const [documentosJudicial, setDocumentosJudicial] = useState([])
-  const [consultaStatus, setConsultaStatus] = useState(null) // { loading, result, error }
-  const [consultaIndividual, setConsultaIndividual] = useState(null) // { loading, result, error, numero }
 
   const loadData = useCallback(async () => {
     try {
@@ -171,23 +169,7 @@ export default function Dashboard({ session }) {
     setAgenteActivo(ok)
   }
 
-  // Consulta de expedientes (Servicios Virtuales)
-  const handleSincronizarExpedientes = async () => {
-    setConsultaStatus({ loading: true })
-    try {
-      const result = await db.sincronizarExpedientes()
-      setConsultaStatus({ loading: false, result })
-      if (result.documentos_insertados > 0) loadData()
-    } catch(e) { setConsultaStatus({ loading: false, error: e.message }) }
-  }
-  const handleConsultarExpediente = async (numero, juzgado) => {
-    setConsultaIndividual({ loading: true, numero })
-    try {
-      const result = await db.consultarExpediente(numero, juzgado)
-      setConsultaIndividual({ loading: false, result, numero })
-      loadData()
-    } catch(e) { setConsultaIndividual({ loading: false, error: e.message, numero }) }
-  }
+  // Consulta de expedientes (datos de BD, sincronización automática vía GitHub Actions)
   const handleDelDocJudicial = async (id) => { await db.deleteDocumentoJudicial(id); loadData() }
   const handleToggleVisDocJudicial = async (id, current) => { await db.toggleVisDocJudicial(id, current); loadData() }
 
@@ -520,7 +502,7 @@ export default function Dashboard({ session }) {
         <div style={{width:9,height:9,borderRadius:"50%",background:"#81C784",flexShrink:0,boxShadow:"0 0 6px #81C78455"}} />
         <div style={{flex:1}}>
           <span style={{fontSize:12,color:TEXT,fontWeight:600}}>Sincronización automática activa </span>
-          <span style={{fontSize:12,color:MUTED}}>— lunes a viernes a las 8:00 am</span>
+          <span style={{fontSize:12,color:MUTED}}>— lunes a viernes a las 10:00 am</span>
         </div>
       </div>
 
@@ -552,7 +534,7 @@ export default function Dashboard({ session }) {
           <div style={{fontSize:12,color:MUTED}}>
             {(!cfg?.portal_url || !cfg?.usuario)
               ? 'Configura la URL y credenciales del portal judicial para habilitar la sincronización.'
-              : 'Aún no se ha ejecutado ninguna sincronización. El primer sync ocurrirá el próximo día hábil a las 8:00 am.'}
+              : 'Aún no se ha ejecutado ninguna sincronización. El primer sync ocurrirá el próximo día hábil a las 10:00 am.'}
           </div>
         )}
       </Card>
@@ -593,21 +575,6 @@ export default function Dashboard({ session }) {
     const promociones = documentosJudicial.filter(d => d.tipo === 'Promoción')
     const contestaciones = documentosJudicial.filter(d => d.tipo === 'Contestación')
     const otrosDoc = documentosJudicial.filter(d => !['Acuerdo','Promoción','Contestación'].includes(d.tipo))
-
-    // Formulario de consulta individual
-    const ConsultaForm = () => {
-      const [numExp, setNumExp] = useState('')
-      const [juz, setJuz] = useState('')
-      return <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
-        <div style={{flex:"1 1 200px"}}><Input label="Número de expediente" value={numExp} onChange={e=>setNumExp(e.target.value)} placeholder="123/2024" /></div>
-        <div style={{flex:"1 1 200px"}}><Input label="Juzgado (opcional)" value={juz} onChange={e=>setJuz(e.target.value)} placeholder="Juzgado Civil" /></div>
-        <div style={{paddingBottom:14}}>
-          <Btn v="secondary" small onClick={()=>{if(numExp.trim()) handleConsultarExpediente(numExp.trim(), juz.trim())}}>
-            {consultaIndividual?.loading ? 'Consultando...' : <><IC.Search /> Consultar</>}
-          </Btn>
-        </div>
-      </div>
-    }
 
     // Componente de fila de documento con PDF
     const DocRow = ({doc}) => {
@@ -661,10 +628,12 @@ export default function Dashboard({ session }) {
     }
 
     return <div>
-      {/* Descripción */}
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:13,color:MUTED}}>
-          Consulta automática de expedientes en el portal de Servicios Virtuales del Poder Judicial de Guanajuato. Obtén acuerdos, promociones y contestaciones con acceso directo a los PDFs.
+      {/* Estado de automatización */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"10px 14px",background:"rgba(129,199,132,0.06)",borderRadius:10,border:"1px solid rgba(129,199,132,0.2)"}}>
+        <div style={{width:9,height:9,borderRadius:"50%",background:"#81C784",flexShrink:0,boxShadow:"0 0 6px #81C78455"}} />
+        <div style={{flex:1}}>
+          <span style={{fontSize:12,color:TEXT,fontWeight:600}}>Sincronización automática activa </span>
+          <span style={{fontSize:12,color:MUTED}}>— lunes a viernes a las 10:00 am (solo actuación más reciente por tipo por expediente)</span>
         </div>
       </div>
 
@@ -676,47 +645,19 @@ export default function Dashboard({ session }) {
         <Stat value={contestaciones.length} label="Contestaciones" accent="#7B1FA2" />
       </div>
 
-      {/* Consulta individual */}
-      <Card style={{marginBottom:20}}>
-        <CardTitle><IC.Search /> Consultar expediente individual</CardTitle>
-        <ConsultaForm />
-        {consultaIndividual?.error && <div style={{fontSize:12,color:"#EF9A9A",marginTop:8,padding:"8px 12px",background:"rgba(239,154,154,0.08)",borderRadius:8}}>{consultaIndividual.error}</div>}
-        {consultaIndividual?.result && !consultaIndividual.loading && (
-          <div style={{fontSize:12,color:"#81C784",marginTop:8,padding:"8px 12px",background:"rgba(129,199,132,0.08)",borderRadius:8}}>
-            Consulta completada para {consultaIndividual.numero}: {consultaIndividual.result.totalDocumentos || 0} documentos encontrados
-            ({consultaIndividual.result.acuerdos?.length||0} acuerdos, {consultaIndividual.result.promociones?.length||0} promociones, {consultaIndividual.result.contestaciones?.length||0} contestaciones)
-          </div>
-        )}
-      </Card>
-
-      {/* Sincronización masiva */}
-      <Card style={{marginBottom:20}}>
-        <CardTitle><IC.Sync /> Sincronización masiva</CardTitle>
-        <div style={{fontSize:12,color:MUTED,marginBottom:12}}>
-          Consulta todos tus expedientes activos en el portal de Servicios Virtuales. Solo se obtiene la actuación más reciente por tipo (acuerdo, promoción, contestación) de cada expediente para optimizar tiempo y espacio.
-          {ultConsulta && <span> Última consulta: {ultConsulta}</span>}
-        </div>
+      {/* Última sincronización */}
+      {ultConsulta && <Card style={{marginBottom:20}}>
+        <CardTitle><IC.Sync /> Última sincronización de expedientes</CardTitle>
+        <div style={{fontSize:12,color:MUTED,marginBottom:12}}>Ejecutada el {ultConsulta}</div>
         {ultRes && (
-          <div style={{display:"flex",flexWrap:"wrap",gap:16,marginBottom:14}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
             <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:GOLD}}>{ultRes.expedientes_consultados}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Expedientes</div></div>
             <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#1565C0"}}>{ultRes.documentos_encontrados}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Encontrados</div></div>
             <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#81C784"}}>{ultRes.documentos_insertados}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Nuevos</div></div>
             <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:MUTED}}>{ultRes.duplicados_omitidos}</div><div style={{fontSize:10,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>Duplicados</div></div>
           </div>
         )}
-        <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          <Btn v="primary" small onClick={handleSincronizarExpedientes} disabled={consultaStatus?.loading}>
-            {consultaStatus?.loading ? <><IC.Sync /> Consultando expedientes...</> : <><IC.Sync /> Consultar todos los expedientes</>}
-          </Btn>
-        </div>
-        {consultaStatus?.error && <div style={{fontSize:12,color:"#EF9A9A",marginTop:10,padding:"8px 12px",background:"rgba(239,154,154,0.08)",borderRadius:8}}>{consultaStatus.error}</div>}
-        {consultaStatus?.result && !consultaStatus.loading && (
-          <div style={{fontSize:12,color:"#81C784",marginTop:10,padding:"8px 12px",background:"rgba(129,199,132,0.08)",borderRadius:8}}>
-            Sincronización completada: {consultaStatus.result.documentos_insertados} nuevos documentos de {consultaStatus.result.expedientes_consultados} expedientes
-            {consultaStatus.result.errores?.length > 0 && <div style={{color:"#EF9A9A",marginTop:4}}>Errores: {consultaStatus.result.errores.join(', ')}</div>}
-          </div>
-        )}
-      </Card>
+      </Card>}
 
       {/* Tablas de documentos por categoría */}
       <DocTable docs={acuerdos} titulo="Acuerdos" icon={<IC.File />} />
@@ -729,7 +670,7 @@ export default function Dashboard({ session }) {
           <div style={{textAlign:"center",padding:"30px 20px",color:MUTED}}>
             <IC.File />
             <div style={{fontSize:13,marginTop:10}}>No hay documentos judiciales aún.</div>
-            <div style={{fontSize:12,marginTop:4}}>Usa la consulta individual o la sincronización masiva para obtener acuerdos, promociones y contestaciones del portal.</div>
+            <div style={{fontSize:12,marginTop:4}}>Los documentos se obtienen automáticamente del portal de Servicios Virtuales cada día hábil a las 10:00 am.</div>
           </div>
         </Card>
       )}

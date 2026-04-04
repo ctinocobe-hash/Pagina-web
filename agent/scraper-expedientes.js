@@ -447,20 +447,15 @@ async function extraerResultados(page, numeroExpediente) {
 }
 
 /**
- * Descarga un PDF y lo guarda localmente
+ * Descarga un PDF y devuelve el Buffer (para subir a Supabase Storage)
  * @param {object} page - Página de Puppeteer
  * @param {string} pdfUrl - URL del PDF
- * @param {string} filename - Nombre del archivo
- * @returns {string} - Ruta local del PDF descargado
+ * @returns {{ buffer: Buffer, size: number } | null}
  */
-async function descargarPdf(page, pdfUrl, filename) {
+async function descargarPdfBuffer(page, pdfUrl) {
   console.log(`[scraper-expedientes] Descargando PDF: ${pdfUrl}`)
 
-  const sanitizedName = filename.replace(/[^a-zA-Z0-9_\-\.]/g, '_')
-  const filepath = path.join(PDF_DIR, sanitizedName)
-
   try {
-    // Usar la sesión del navegador para descargar (mantiene cookies)
     const response = await page.evaluate(async (url) => {
       try {
         const res = await fetch(url, { credentials: 'include' })
@@ -481,14 +476,13 @@ async function descargarPdf(page, pdfUrl, filename) {
       return null
     }
 
-    // Guardar el archivo
     const base64Data = response.data.split(',')[1]
-    fs.writeFileSync(filepath, Buffer.from(base64Data, 'base64'))
-    console.log(`[scraper-expedientes] PDF guardado: ${filepath} (${response.size} bytes)`)
+    const buffer = Buffer.from(base64Data, 'base64')
+    console.log(`[scraper-expedientes] PDF descargado: ${buffer.length} bytes`)
 
-    return filepath
+    return { buffer, size: response.size, type: response.type }
   } catch (e) {
-    console.error(`[scraper-expedientes] Error guardando PDF: ${e.message}`)
+    console.error(`[scraper-expedientes] Error descargando PDF: ${e.message}`)
     return null
   }
 }
@@ -556,23 +550,23 @@ async function consultarExpedientes(credenciales, expedientes, opciones = {}) {
         console.log(`\n[scraper-expedientes] === Consultando: ${exp.numero} ===`)
         const resultado = await consultarExpediente(page, exp.numero, exp.juzgado || '')
 
-        // Descargar PDFs si se solicita
-        if (descargarPdfs) {
-          const allDocs = [...resultado.acuerdos, ...resultado.promociones, ...resultado.contestaciones, ...resultado.otros]
-          for (const doc of allDocs) {
-            if (doc.pdfUrl) {
-              const pdfFilename = `${exp.numero.replace(/\//g, '-')}_${doc.tipo}_${doc.fecha || 'sin-fecha'}.pdf`
-              doc.localPath = await descargarPdf(page, doc.pdfUrl, pdfFilename)
-            }
-          }
-        }
-
-        // Si soloRecientes, filtrar a únicamente el doc más reciente por tipo
+        // Si soloRecientes, filtrar ANTES de descargar PDFs (ahorra tiempo y espacio)
         if (soloRecientes) {
           resultado.acuerdos = filtrarSoloRecientes(resultado.acuerdos)
           resultado.promociones = filtrarSoloRecientes(resultado.promociones)
           resultado.contestaciones = filtrarSoloRecientes(resultado.contestaciones)
           resultado.otros = filtrarSoloRecientes(resultado.otros)
+        }
+
+        // Descargar PDFs después del filtro (solo los que quedan)
+        if (descargarPdfs) {
+          const allDocs = [...resultado.acuerdos, ...resultado.promociones, ...resultado.contestaciones, ...resultado.otros]
+          for (const doc of allDocs) {
+            if (doc.pdfUrl) {
+              const downloaded = await descargarPdfBuffer(page, doc.pdfUrl)
+              if (downloaded) doc.pdfBuffer = downloaded.buffer
+            }
+          }
         }
 
         resultados[exp.numero] = {
@@ -605,4 +599,4 @@ async function consultarUnExpediente(credenciales, numero, juzgado = '', opcione
   return resultados[numero] || { success: false, error: 'Sin resultados' }
 }
 
-module.exports = { consultarExpedientes, consultarUnExpediente, descargarPdf }
+module.exports = { consultarExpedientes, consultarUnExpediente, descargarPdfBuffer }
