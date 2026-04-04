@@ -330,4 +330,90 @@ export const db = {
       return false
     }
   },
+
+  // ============================================
+  // CONSULTA DE EXPEDIENTES (Servicios Virtuales)
+  // ============================================
+
+  async getDocumentosJudicial(expedienteId = null) {
+    let query = supabase.from('documentos_judicial').select('*').order('fecha', { ascending: false })
+    if (expedienteId) query = query.eq('expediente_id', expedienteId)
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  },
+
+  async getAllDocumentosJudicial() {
+    const { data, error } = await supabase
+      .from('documentos_judicial')
+      .select('*')
+      .order('fecha', { ascending: false })
+    if (error) throw error
+    return data || []
+  },
+
+  async deleteDocumentoJudicial(id) {
+    const { error } = await supabase.from('documentos_judicial').delete().eq('id', id)
+    if (error) throw error
+  },
+
+  async toggleVisDocJudicial(id, visible) {
+    const { error } = await supabase
+      .from('documentos_judicial')
+      .update({ visible_portal: !visible })
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async sincronizarExpedientes(expedientes = [], descargarPdfs = false) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No hay sesión activa')
+
+    const agentUrl = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001'
+    const body = { descargar_pdfs: descargarPdfs }
+    if (expedientes.length > 0) body.expedientes = expedientes
+
+    let res
+    try {
+      res = await fetch(`${agentUrl}/sync-expedientes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(body),
+      })
+    } catch {
+      throw new Error('No se pudo conectar con el agente local. Asegúrate de que esté corriendo: cd agent && node server.js')
+    }
+
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al consultar expedientes')
+    return json
+  },
+
+  async consultarExpediente(numero, juzgado = '', descargarPdfs = false) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No hay sesión activa')
+
+    const agentUrl = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001'
+
+    let res
+    try {
+      res = await fetch(`${agentUrl}/consultar-expediente`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ numero, juzgado, descargar_pdfs: descargarPdfs }),
+      })
+    } catch {
+      throw new Error('No se pudo conectar con el agente local.')
+    }
+
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al consultar expediente')
+    return json
+  },
 }
