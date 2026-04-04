@@ -229,6 +229,8 @@ app.post('/sync-expedientes', async (req, res) => {
     // 3. Obtener expedientes a consultar
     let expsToQuery = req.body.expedientes || []
     const descargarPdfs = req.body.descargar_pdfs || false
+    // Por defecto en masiva: solo traer la actuación más reciente por tipo por expediente
+    const soloRecientes = req.body.solo_recientes !== false
 
     // Si no se especifican expedientes, consultar todos los activos del usuario
     if (expsToQuery.length === 0) {
@@ -251,11 +253,11 @@ app.post('/sync-expedientes', async (req, res) => {
 
     console.log(`[sync-expedientes] Usuario: ${user.email} | ${expsToQuery.length} expedientes a consultar`)
 
-    // 4. Ejecutar scraping
+    // 4. Ejecutar scraping (soloRecientes=true para masiva: 1 doc por tipo por expediente)
     const resultados = await consultarExpedientes(
       config,
       expsToQuery,
-      { descargarPdfs }
+      { descargarPdfs, soloRecientes }
     )
 
     // 5. Guardar documentos encontrados en la BD

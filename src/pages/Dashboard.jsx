@@ -693,7 +693,7 @@ export default function Dashboard({ session }) {
       <Card style={{marginBottom:20}}>
         <CardTitle><IC.Sync /> Sincronización masiva</CardTitle>
         <div style={{fontSize:12,color:MUTED,marginBottom:12}}>
-          Consulta todos tus expedientes activos de una sola vez en el portal de Servicios Virtuales.
+          Consulta todos tus expedientes activos en el portal de Servicios Virtuales. Solo se obtiene la actuación más reciente por tipo (acuerdo, promoción, contestación) de cada expediente para optimizar tiempo y espacio.
           {ultConsulta && <span> Última consulta: {ultConsulta}</span>}
         </div>
         {ultRes && (
