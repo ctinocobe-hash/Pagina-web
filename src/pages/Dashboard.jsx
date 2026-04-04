@@ -11,6 +11,56 @@ const actTipos = ["Presentación", "Acuerdo", "Auto", "Sentencia", "Notificació
 const incidentesSucesorio = ["Reconocimiento de heredero", "Remoción de albacea", "Rendición de cuentas del albacea", "Oposición al inventario", "Oposición al avalúo", "Nombramiento de albacea", "Sustitución de albacea", "Liquidación de sociedad conyugal", "Petición de herencia", "Intervención de acreedor", "Nulidad de inventario", "Separación de patrimonio", "Otro incidente sucesorio"]
 const docTipos = ["Contrato", "Recibo de pago", "Poder notarial", "Identificación", "Comprobante domicilio", "CURP", "RFC", "Escritura", "Otro"]
 
+const juzgados = {
+  "Irapuato": [
+    "Juzgado de Partido Primero Civil",
+    "Juzgado de Partido Segundo Civil",
+    "Juzgado de Partido Tercero Civil",
+    "Juzgado de Partido Cuarto Civil",
+    "Juzgado de Partido Quinto Civil",
+    "Juzgado Primero Menor Mixto (Civil)",
+    "Juzgado Segundo Menor Civil",
+    "Juzgado Tercero Menor Civil",
+    "Juzgado Cuarto Menor Civil",
+    "Juzgado Quinto Menor Civil",
+  ],
+  "León": [
+    "Juzgado de Partido Primero Civil",
+    "Juzgado de Partido Segundo Civil",
+    "Juzgado de Partido Tercero Civil",
+    "Juzgado de Partido Cuarto Civil",
+    "Juzgado de Partido Quinto Civil",
+    "Juzgado de Partido Sexto Civil",
+    "Juzgado de Partido Séptimo Civil",
+    "Juzgado de Partido Octavo Civil",
+    "Juzgado de Partido Noveno Civil",
+    "Juzgado de Partido Décimo Civil",
+    "Juzgado de Partido Décimo Primero Civil",
+    "Juzgado de Partido Décimo Segundo Civil",
+    "Juzgado de Partido Décimo Tercero Civil",
+    "Juzgado de Partido Décimo Cuarto Civil",
+    "Juzgado Primero Menor Mixto (Civil)",
+    "Juzgado Segundo Menor Civil",
+    "Juzgado Tercero Menor Civil",
+    "Juzgado Cuarto Menor Civil",
+    "Juzgado Quinto Menor Civil",
+    "Juzgado Sexto Menor Civil",
+    "Juzgado Séptimo Menor Civil",
+    "Juzgado Octavo Menor Civil",
+    "Juzgado Noveno Menor Civil",
+    "Juzgado Décimo Menor Civil",
+    "Juzgado Décimo Primero Menor Civil",
+    "Juzgado Décimo Segundo Menor Civil",
+    "Juzgado Décimo Tercero Menor Civil",
+  ],
+  "Pénjamo": [
+    "Juzgado de Partido Primero Civil",
+    "Juzgado de Partido Segundo Civil",
+    "Juzgado Único Menor Mixto",
+  ],
+}
+const sanitizeText = (v) => v.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s/.,-]/g, "")
+
 const GOLD = "#B8963E"; const GOLD_LIGHT = "#D4AF5C"
 const FT = "'Cormorant Garamond', serif"
 const FB = "'Source Serif 4', serif"; const FU = "'DM Sans', sans-serif"
@@ -193,7 +243,7 @@ export default function Dashboard({ session }) {
   const Btn = ({children,onClick,v="primary",small=false}) => {const vs={primary:{background:GOLD,color:BG,border:"none"},secondary:{background:"transparent",color:GOLD,border:`1px solid rgba(184,150,62,0.3)`},danger:{background:"transparent",color:"#EF9A9A",border:"1px solid rgba(239,154,154,0.3)"},success:{background:"transparent",color:"#81C784",border:"1px solid rgba(129,199,132,0.3)"},ghost:{background:"transparent",color:MUTED,border:"none"}};return<button onClick={onClick} style={{...vs[v],borderRadius:8,padding:small?"5px 12px":"10px 18px",fontSize:small?12:13,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",letterSpacing:.3}}>{children}</button>}
   const Input = ({label,...p}) => <div style={{marginBottom:14}}><label style={{display:"block",fontSize:10,textTransform:"uppercase",letterSpacing:1.2,color:MUTED,marginBottom:5}}>{label}</label><input {...p} style={{width:"100%",padding:"9px 12px",background:"rgba(184,150,62,0.05)",border:"1px solid rgba(184,150,62,0.15)",borderRadius:8,color:TEXT,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}} /></div>
   const Sel = ({label,children,...p}) => <div style={{marginBottom:14}}><label style={{display:"block",fontSize:10,textTransform:"uppercase",letterSpacing:1.2,color:MUTED,marginBottom:5}}>{label}</label><select {...p} style={{width:"100%",padding:"9px 12px",background:SURFACE,border:"1px solid rgba(184,150,62,0.15)",borderRadius:8,color:TEXT,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}>{children}</select></div>
-  const ModalWrap = ({title,children,onClose,wide}) => <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}} onClick={onClose}><div onClick={e=>e.stopPropagation()} style={{background:"#152028",border:"1px solid rgba(184,150,62,0.15)",borderRadius:16,padding:24,width:"92%",maxWidth:wide?640:480,maxHeight:"85vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><h3 style={{margin:0,fontSize:17,color:GOLD,fontWeight:700}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:MUTED,cursor:"pointer"}}><IC.X /></button></div>{children}</div></div>
+  const ModalWrap = ({title,children,onClose,wide}) => <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}} onClick={onClose}><div onClick={e=>e.stopPropagation()} style={{background:dark?"#152028":SURFACE,border:`1px solid ${dark?"rgba(184,150,62,0.15)":"rgba(184,150,62,0.25)"}`,borderRadius:16,padding:24,width:"92%",maxWidth:wide?640:480,maxHeight:"85vh",overflowY:"auto",color:TEXT}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><h3 style={{margin:0,fontSize:17,color:GOLD,fontWeight:700}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:MUTED,cursor:"pointer"}}><IC.X /></button></div>{children}</div></div>
   const Th = ({children,sx={}}) => <th style={{textAlign:"left",padding:"10px 12px",fontSize:10,textTransform:"uppercase",letterSpacing:1.2,color:MUTED,borderBottom:"1px solid rgba(184,150,62,0.08)",background:"rgba(184,150,62,0.03)",whiteSpace:"nowrap",...sx}}>{children}</th>
   const Td = ({children,sx={}}) => <td style={{padding:"10px 12px",borderBottom:"1px solid rgba(184,150,62,0.04)",color:TD_CLR,verticalAlign:"middle",fontSize:13,...sx}}>{children}</td>
   const Card = ({children,style:sx={}}) => <div style={{background:"rgba(184,150,62,0.03)",border:"1px solid rgba(184,150,62,0.08)",borderRadius:14,padding:18,position:"relative",...sx}}>{children}</div>
@@ -220,13 +270,13 @@ export default function Dashboard({ session }) {
     const [f,sF]=useState({numero:"",tipo:"Contencioso Administrativo",materia:"Administrativa",cliente_id:"",juzgado:"",estado:"En trámite",urgente:false,fecha_inicio:today,proximo_plazo:"",notas:"",notas_cliente:"",expediente_padre_id:null,relacion:""})
     const u=(k,v)=>sF(p=>({...p,[k]:v}))
     return <>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio")u("estado","Radicación");else if(!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",sanitizeText(e.target.value))} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio")u("estado","Radicación");else if(!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
       <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
       <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
-      <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
+      <Sel label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)}><option value="">Seleccionar...</option>{Object.entries(juzgados).map(([ciudad,lista])=><optgroup key={ciudad} label={ciudad}>{lista.map(j=><option key={j} value={j}>{j}</option>)}</optgroup>)}</Sel>
       <Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} />
-      <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",e.target.value)} />
-      <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",e.target.value)} />
+      <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} />
+      <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",sanitizeText(e.target.value))} />
       <Card style={{marginBottom:14}}><CardTitle><IC.Link /> Vincular expediente padre</CardTitle>
         <Sel label="Exp. padre" value={f.expediente_padre_id||""} onChange={e=>u("expediente_padre_id",e.target.value||null)}><option value="">Ninguno</option>{expedientes.map(x=><option key={x.id} value={x.id}>{x.numero} — {getCli(x.cliente_id)?.nombre}</option>)}</Sel>
         {f.expediente_padre_id&&<Sel label="Relación" value={f.relacion} onChange={e=>u("relacion",e.target.value)}><option value="">Seleccionar...</option>{relacionesTipo.map(r=><option key={r}>{r}</option>)}</Sel>}
@@ -245,13 +295,13 @@ export default function Dashboard({ session }) {
     })
     const u=(k,v)=>sF(p=>({...p,[k]:v}))
     return <>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",e.target.value)} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio"&&!estadosSucesorio.includes(f.estado))u("estado","Radicación");else if(m!=="Sucesorio"&&!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="No. expediente" value={f.numero} onChange={e=>u("numero",sanitizeText(e.target.value))} /><Sel label="Materia" value={f.materia} onChange={e=>{const m=e.target.value;u("materia",m);if(m==="Sucesorio"&&!estadosSucesorio.includes(f.estado))u("estado","Radicación");else if(m!=="Sucesorio"&&!estadosProc.includes(f.estado))u("estado","En trámite")}}>{materias.map(m=><option key={m}>{m}</option>)}</Sel></div>
       <Sel label="Tipo de juicio" value={tiposJuicio.includes(f.tipo)?f.tipo:"Otro"} onChange={e=>u("tipo",e.target.value)}>{tiposJuicio.map(t=><option key={t}>{t}</option>)}{!tiposJuicio.includes(f.tipo)&&f.tipo&&<option value={f.tipo}>{f.tipo}</option>}</Sel>
       <Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
-      <Input label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)} />
+      <Sel label="Juzgado / Tribunal" value={f.juzgado} onChange={e=>u("juzgado",e.target.value)}><option value="">Seleccionar...</option>{Object.entries(juzgados).map(([ciudad,lista])=><optgroup key={ciudad} label={ciudad}>{lista.map(j=><option key={j} value={j}>{j}</option>)}</optgroup>)}{f.juzgado&&!Object.values(juzgados).flat().includes(f.juzgado)&&<option value={f.juzgado}>{f.juzgado}</option>}</Sel>
       <Input label="Próximo plazo" type="date" value={f.proximo_plazo} onChange={e=>u("proximo_plazo",e.target.value)} />
-      <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",e.target.value)} />
-      <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",e.target.value)} />
+      <Input label="Notas internas (solo equipo)" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} />
+      <Input label="Notas para el cliente (visible en portal)" value={f.notas_cliente} onChange={e=>u("notas_cliente",sanitizeText(e.target.value))} />
       <Card style={{marginBottom:14}}><CardTitle><IC.Link /> Vincular expediente padre</CardTitle>
         <Sel label="Exp. padre" value={f.expediente_padre_id||""} onChange={e=>u("expediente_padre_id",e.target.value||null)}><option value="">Ninguno</option>{expedientes.filter(x=>x.id!==exp.id).map(x=><option key={x.id} value={x.id}>{x.numero} — {getCli(x.cliente_id)?.nombre}</option>)}</Sel>
         {f.expediente_padre_id&&<Sel label="Relación" value={f.relacion} onChange={e=>u("relacion",e.target.value)}><option value="">Seleccionar...</option>{relacionesTipo.map(r=><option key={r}>{r}</option>)}</Sel>}
@@ -263,20 +313,20 @@ export default function Dashboard({ session }) {
 
   const CliForm = () => {
     const [f,sF]=useState({nombre:"",telefono:"",email:"",direccion:"",rfc:"",notas:""});const u=(k,v)=>sF({...f,[k]:v})
-    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value)} /><Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",e.target.value)} /><Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value)} /><Input label="Notas" value={f.notas} onChange={e=>u("notas",e.target.value)} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
+    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",sanitizeText(e.target.value))} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value.replace(/[^0-9+\s()-]/g,""))} /><Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",sanitizeText(e.target.value))} /><Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value.replace(/[^a-zA-Z0-9]/g,""))} /><Input label="Notas" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
   }
   const CliEditForm = ({cli}) => {
     const [f,sF]=useState({nombre:cli.nombre||"",telefono:cli.telefono||"",email:cli.email||"",direccion:cli.direccion||"",rfc:cli.rfc||"",notas:cli.notas||"",activo:cli.activo!==false})
     const u=(k,v)=>sF({...f,[k]:v})
     return <>
-      <Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} />
+      <Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",sanitizeText(e.target.value))} />
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value)} />
+        <Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value.replace(/[^0-9+\s()-]/g,""))} />
         <Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} />
       </div>
-      <Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",e.target.value)} />
-      <Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value)} />
-      <Input label="Notas" value={f.notas} onChange={e=>u("notas",e.target.value)} />
+      <Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",sanitizeText(e.target.value))} />
+      <Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value.replace(/[^a-zA-Z0-9]/g,""))} />
+      <Input label="Notas" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} />
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
         <input type="checkbox" checked={f.activo} onChange={e=>u("activo",e.target.checked)} id="activo_e"/>
         <label htmlFor="activo_e" style={{fontSize:13,color:TEXT}}>Cliente activo</label>
@@ -286,7 +336,7 @@ export default function Dashboard({ session }) {
   }
   const CobForm = () => {
     const [f,sF]=useState({cliente_id:"",concepto:"",monto:0,estado:"Pendiente",fecha_emision:today,fecha_vencimiento:""});const u=(k,v)=>sF({...f,[k]:v})
-    return <><Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel><Input label="Concepto" value={f.concepto} onChange={e=>u("concepto",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Monto ($)" type="number" value={f.monto} onChange={e=>u("monto",Number(e.target.value))} /><Input label="Vencimiento" type="date" value={f.fecha_vencimiento} onChange={e=>u("fecha_vencimiento",e.target.value)} /></div><Btn onClick={()=>f.cliente_id&&f.monto?handleAddCobro(f):null}>Guardar</Btn></>
+    return <><Sel label="Cliente" value={f.cliente_id} onChange={e=>u("cliente_id",e.target.value)}><option value="">Seleccionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel><Input label="Concepto" value={f.concepto} onChange={e=>u("concepto",sanitizeText(e.target.value))} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Monto ($)" type="number" value={f.monto} onChange={e=>u("monto",Number(e.target.value))} /><Input label="Vencimiento" type="date" value={f.fecha_vencimiento} onChange={e=>u("fecha_vencimiento",e.target.value)} /></div><Btn onClick={()=>f.cliente_id&&f.monto?handleAddCobro(f):null}>Guardar</Btn></>
   }
   const ActForm = ({expId}) => {
     const exp = getExp(expId)
@@ -303,15 +353,15 @@ export default function Dashboard({ session }) {
           }
         </Sel>
       </div>
-      <Input label="Descripción" value={f.descripcion} onChange={e=>u("descripcion",e.target.value)} />
-      <Input label="Documento (ref.)" value={f.documento} onChange={e=>u("documento",e.target.value)} />
+      <Input label="Descripción" value={f.descripcion} onChange={e=>u("descripcion",sanitizeText(e.target.value))} />
+      <Input label="Documento (ref.)" value={f.documento} onChange={e=>u("documento",sanitizeText(e.target.value))} />
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><input type="checkbox" checked={f.visible_portal} onChange={e=>u("visible_portal",e.target.checked)} id="vp"/><label htmlFor="vp" style={{fontSize:13,color:TEXT}}>Visible para el cliente en el portal</label></div>
       <Btn onClick={()=>f.descripcion?handleAddActuacion(expId,f):null}>Guardar</Btn>
     </>
   }
   const DocForm = ({cliId}) => {
     const [f,sF]=useState({nombre:"",tipo:"Contrato",fecha:today,notas:"",visible_portal:false});const u=(k,v)=>sF({...f,[k]:v})
-    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",e.target.value)} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Tipo" value={f.tipo} onChange={e=>u("tipo",e.target.value)}>{docTipos.map(t=><option key={t}>{t}</option>)}</Sel><Input label="Fecha" type="date" value={f.fecha} onChange={e=>u("fecha",e.target.value)} /></div><Input label="Notas" value={f.notas} onChange={e=>u("notas",e.target.value)} /><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><input type="checkbox" checked={f.visible_portal} onChange={e=>u("visible_portal",e.target.checked)} id="vpd"/><label htmlFor="vpd" style={{fontSize:13,color:TEXT}}>Compartir con el cliente en el portal</label></div><Btn onClick={()=>f.nombre?handleAddDocumento(cliId,f):null}>Guardar</Btn></>
+    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",sanitizeText(e.target.value))} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Sel label="Tipo" value={f.tipo} onChange={e=>u("tipo",e.target.value)}>{docTipos.map(t=><option key={t}>{t}</option>)}</Sel><Input label="Fecha" type="date" value={f.fecha} onChange={e=>u("fecha",e.target.value)} /></div><Input label="Notas" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} /><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><input type="checkbox" checked={f.visible_portal} onChange={e=>u("visible_portal",e.target.checked)} id="vpd"/><label htmlFor="vpd" style={{fontSize:13,color:TEXT}}>Compartir con el cliente en el portal</label></div><Btn onClick={()=>f.nombre?handleAddDocumento(cliId,f):null}>Guardar</Btn></>
   }
   // Portal judicial config form
   const PortalJudicialConfigForm = ({config, onSave}) => {
