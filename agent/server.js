@@ -11,19 +11,42 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
 const { createClient } = require('@supabase/supabase-js')
 const { scrapearNotificaciones } = require('./scraper')
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// ─── CORS: permite llamadas desde el dashboard (dev y producción) ─────────────
+// ─── Security headers ────────────────────────────────────────────────────────
+app.use(helmet())
+
+// ─── CORS: solo orígenes autorizados ─────────────────────────────────────────
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map(o => o.trim())
+
 app.use(cors({
-  origin: (origin, cb) => cb(null, true), // acepta cualquier origen local
+  origin: (origin, cb) => {
+    // Permitir requests sin origin (herramientas CLI, server-to-server)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Origen no autorizado por CORS'))
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 app.use(express.json())
+
+// ─── Rate limiting para /sync ────────────────────────────────────────────────
+const syncLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 5,                   // máximo 5 requests por ventana
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas solicitudes de sincronización. Intenta en unos minutos.' },
+})
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +58,8 @@ function supabaseConToken(token) {
   )
 }
 
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
+
 // ─── GET /health ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({ ok: true, agent: 'despacho-agent', version: '1.0.0' })
@@ -43,7 +68,7 @@ app.get('/health', (req, res) => {
 // ─── POST /sync ───────────────────────────────────────────────────────────────
 // Body: { fecha_inicio?: 'YYYY-MM-DD', fecha_fin?: 'YYYY-MM-DD' }
 // Header: Authorization: Bearer <supabase_jwt>
-app.post('/sync', async (req, res) => {
+app.post('/sync', syncLimiter, async (req, res) => {
   const authHeader = req.headers.authorization || ''
   const token = authHeader.replace('Bearer ', '').trim()
 
@@ -74,15 +99,23 @@ app.post('/sync', async (req, res) => {
       return res.status(400).json({ error: 'Credenciales incompletas — configura usuario y contraseña' })
     }
 
-    // 3. Parámetros de fecha
+    // 3. Parámetros de fecha con validación
     const { fecha_inicio, fecha_fin } = req.body
+
+    if (fecha_inicio && !DATE_REGEX.test(fecha_inicio)) {
+      return res.status(400).json({ error: 'fecha_inicio inválida (formato: YYYY-MM-DD)' })
+    }
+    if (fecha_fin && !DATE_REGEX.test(fecha_fin)) {
+      return res.status(400).json({ error: 'fecha_fin inválida (formato: YYYY-MM-DD)' })
+    }
+
     const hoy = new Date().toISOString().split('T')[0]
     const hace30dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     const inicio = fecha_inicio || hace30dias
     const fin = fecha_fin || hoy
     const periodo = `${inicio} al ${fin}`
 
-    console.log(`[sync] Usuario: ${user.email} | Período: ${periodo}`)
+    console.log(`[sync] Usuario: ${user.id} | Período: ${periodo}`)
 
     // 4. Scraping
     const notificaciones = await scrapearNotificaciones(config, inicio, fin)
@@ -186,8 +219,8 @@ app.post('/sync', async (req, res) => {
     res.json({ periodo, errores, ...resultado })
 
   } catch (err) {
-    console.error('[sync] Error:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('[sync] Error interno:', err.message, err.stack)
+    res.status(500).json({ error: 'Error interno al sincronizar. Revisa los logs del agente.' })
   }
 })
 

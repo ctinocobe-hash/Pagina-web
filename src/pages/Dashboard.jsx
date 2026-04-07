@@ -59,7 +59,8 @@ const juzgados = {
     "Juzgado Único Menor Mixto",
   ],
 }
-const sanitizeText = (v) => v.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s/.,-]/g, "")
+const sanitizeText = (v) => v.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s/.,()\-:;#¿?¡!'"°]/g, "")
+const sanitizeEmail = (v) => v.replace(/[^a-zA-Z0-9@._+\-]/g, "")
 
 const GOLD = "#B8963E"; const GOLD_LIGHT = "#D4AF5C"
 const FT = "'Cormorant Garamond', serif"
@@ -196,7 +197,8 @@ export default function Dashboard({ session }) {
     try {
       await db.createPortalAccountSimple(email, password, clienteId)
       loadData()
-      return { success: true, email, password }
+      // Se muestra la contraseña una sola vez; se limpia del state con temporizador en PortalForm
+      return { success: true, email, tempPassword: password }
     } catch(e) { return { success: false, error: e.message } }
   }
 
@@ -313,7 +315,7 @@ export default function Dashboard({ session }) {
 
   const CliForm = () => {
     const [f,sF]=useState({nombre:"",telefono:"",email:"",direccion:"",rfc:"",notas:""});const u=(k,v)=>sF({...f,[k]:v})
-    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",sanitizeText(e.target.value))} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value.replace(/[^0-9+\s()-]/g,""))} /><Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",sanitizeText(e.target.value))} /><Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value.replace(/[^a-zA-Z0-9]/g,""))} /><Input label="Notas" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
+    return <><Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",sanitizeText(e.target.value))} /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value.replace(/[^0-9+\s()-]/g,""))} /><Input label="Email" value={f.email} onChange={e=>u("email",sanitizeEmail(e.target.value))} /></div><Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",sanitizeText(e.target.value))} /><Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value.replace(/[^a-zA-Z0-9]/g,""))} /><Input label="Notas" value={f.notas} onChange={e=>u("notas",sanitizeText(e.target.value))} /><Btn onClick={()=>f.nombre?handleAddCliente(f):null}>Guardar</Btn></>
   }
   const CliEditForm = ({cli}) => {
     const [f,sF]=useState({nombre:cli.nombre||"",telefono:cli.telefono||"",email:cli.email||"",direccion:cli.direccion||"",rfc:cli.rfc||"",notas:cli.notas||"",activo:cli.activo!==false})
@@ -322,7 +324,7 @@ export default function Dashboard({ session }) {
       <Input label="Nombre" value={f.nombre} onChange={e=>u("nombre",sanitizeText(e.target.value))} />
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <Input label="Teléfono" value={f.telefono} onChange={e=>u("telefono",e.target.value.replace(/[^0-9+\s()-]/g,""))} />
-        <Input label="Email" value={f.email} onChange={e=>u("email",e.target.value)} />
+        <Input label="Email" value={f.email} onChange={e=>u("email",sanitizeEmail(e.target.value))} />
       </div>
       <Input label="Dirección" value={f.direccion} onChange={e=>u("direccion",sanitizeText(e.target.value))} />
       <Input label="RFC" value={f.rfc} onChange={e=>u("rfc",e.target.value.replace(/[^a-zA-Z0-9]/g,""))} />
@@ -368,7 +370,7 @@ export default function Dashboard({ session }) {
     const [f, sF] = useState({
       portal_url: config?.portal_url || '',
       usuario: config?.usuario || '',
-      password: config?.password || '',
+      password: '',
     })
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -384,7 +386,7 @@ export default function Dashboard({ session }) {
       <Input label="URL del portal judicial" value={f.portal_url} onChange={e=>u('portal_url',e.target.value)} placeholder="https://sige.poderjudicialgto.gob.mx" />
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <Input label="Usuario" value={f.usuario} onChange={e=>u('usuario',e.target.value)} />
-        <Input label="Contraseña" type="password" value={f.password} onChange={e=>u('password',e.target.value)} />
+        <Input label="Contraseña" type="password" value={f.password} onChange={e=>u('password',e.target.value)} placeholder={config?.usuario ? "••••••••  (sin cambios si se deja vacío)" : "Contraseña del portal"} />
       </div>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <Btn onClick={save} v="secondary" small>{saving ? 'Guardando...' : 'Guardar credenciales'}</Btn>
@@ -400,11 +402,19 @@ export default function Dashboard({ session }) {
     const [password,setPassword]=useState("")
     const [loading,setLd]=useState(false)
     const [result,setResult]=useState(null)
+    const [pwExpired,setPwExpired]=useState(false)
     const create = async () => {
       setLd(true); setResult(null)
       const r = await handleCreatePortalAccount(email, password, cliId)
       setResult(r); setLd(false)
     }
+    // Auto-limpiar contraseña del state después de 60 segundos
+    useEffect(() => {
+      if (result?.tempPassword && !pwExpired) {
+        const timer = setTimeout(() => setPwExpired(true), 60000)
+        return () => clearTimeout(timer)
+      }
+    }, [result, pwExpired])
     if (result?.success) return (
       <div>
         <div style={{background:"rgba(46,125,50,0.08)",border:"1px solid rgba(46,125,50,0.2)",borderRadius:10,padding:16,marginBottom:20}}>
@@ -413,10 +423,10 @@ export default function Dashboard({ session }) {
           <div style={{background:"rgba(0,0,0,0.2)",borderRadius:8,padding:12,fontFamily:"monospace",fontSize:13}}>
             <div style={{color:MUTED,fontSize:10,marginBottom:4}}>CORREO</div>
             <div style={{color:TEXT,fontWeight:600,marginBottom:10}}>{result.email}</div>
-            <div style={{color:MUTED,fontSize:10,marginBottom:4}}>CONTRASEÑA</div>
-            <div style={{color:GOLD,fontWeight:700,letterSpacing:2}}>{result.password}</div>
+            <div style={{color:MUTED,fontSize:10,marginBottom:4}}>CONTRASE&Ntilde;A</div>
+            <div style={{color:GOLD,fontWeight:700,letterSpacing:2}}>{pwExpired ? "••••••••" : result.tempPassword}</div>
           </div>
-          <div style={{fontSize:11,color:"rgba(160,152,130,0.6)",marginTop:10}}>Guarda esta contraseña ahora, no se mostrará de nuevo.</div>
+          <div style={{fontSize:11,color:"rgba(160,152,130,0.6)",marginTop:10}}>{pwExpired ? "La contrase\u00f1a ha sido ocultada por seguridad." : "Guarda esta contrase\u00f1a ahora, se ocultar\u00e1 en 60 segundos."}</div>
         </div>
         <Btn onClick={()=>setSubModal(null)}>Listo</Btn>
       </div>
@@ -424,10 +434,10 @@ export default function Dashboard({ session }) {
     return <>
       <div style={{background:"rgba(184,150,62,0.05)",borderRadius:10,padding:14,marginBottom:16}}>
         <div style={{fontSize:13,color:TEXT,fontWeight:600}}>{cli?.nombre}</div>
-        <div style={{fontSize:12,color:MUTED,marginTop:2}}>Se creará una cuenta de portal para este cliente</div>
+        <div style={{fontSize:12,color:MUTED,marginTop:2}}>Se crear&aacute; una cuenta de portal para este cliente</div>
       </div>
-      <Input label="Correo del cliente" value={email} onChange={e=>setEmail(e.target.value)} type="email" />
-      <Input label="Contraseña temporal" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mín. 6 caracteres" />
+      <Input label="Correo del cliente" value={email} onChange={e=>setEmail(sanitizeEmail(e.target.value))} type="email" />
+      <Input label="Contrase\u00f1a temporal" value={password} onChange={e=>setPassword(e.target.value)} placeholder="M\u00edn. 6 caracteres" />
       {result?.error&&<div style={{background:"rgba(198,40,40,0.08)",borderRadius:8,padding:10,marginBottom:14,fontSize:12,color:"#EF9A9A"}}>{result.error}</div>}
       <Btn onClick={()=>email&&password.length>=6?create():null}>{loading?"Creando...":"Crear cuenta de portal"}</Btn>
     </>

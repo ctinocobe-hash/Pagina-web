@@ -276,7 +276,10 @@ export const db = {
   // ============================================
 
   async getConfiguracionPortal() {
-    const { data, error } = await supabase.from('configuracion_portal').select('*').single()
+    // No traer el campo password al frontend — solo se necesita para el agent server
+    const { data, error } = await supabase.from('configuracion_portal')
+      .select('id, portal_url, usuario, ultimo_sync, ultimo_resultado, equipo_id, created_at, updated_at')
+      .single()
     if (error && error.code !== 'PGRST116') throw error
     return data || null
   },
@@ -284,10 +287,15 @@ export const db = {
   async saveConfiguracionPortal(config) {
     const { data: { user } } = await supabase.auth.getUser()
     const equipoId = await this.getEquipoId()
+    // No enviar password vacío (preservar el existente si no se cambia)
+    const payload = { portal_url: config.portal_url, usuario: config.usuario, user_id: user.id, equipo_id: equipoId }
+    if (config.password) {
+      payload.password = config.password
+    }
     const { data, error } = await supabase
       .from('configuracion_portal')
-      .upsert({ ...config, user_id: user.id, equipo_id: equipoId }, { onConflict: 'user_id' })
-      .select()
+      .upsert(payload, { onConflict: 'user_id' })
+      .select('id, portal_url, usuario, ultimo_sync, ultimo_resultado, created_at, updated_at')
       .single()
     if (error) throw error
     return data

@@ -5,6 +5,8 @@ import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import Portal from './pages/portal'
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutos de inactividad
+
 function App() {
   const [session, setSession] = useState(null)
   const [userType, setUserType] = useState(null)
@@ -24,6 +26,22 @@ function App() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  // Cierre de sesión por inactividad
+  useEffect(() => {
+    if (!session) return
+    let timer = setTimeout(() => supabase.auth.signOut(), IDLE_TIMEOUT_MS)
+    const resetTimer = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => supabase.auth.signOut(), IDLE_TIMEOUT_MS)
+    }
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
+    events.forEach(ev => window.addEventListener(ev, resetTimer))
+    return () => {
+      clearTimeout(timer)
+      events.forEach(ev => window.removeEventListener(ev, resetTimer))
+    }
+  }, [session])
 
   async function detectUserType() {
     try {
