@@ -339,21 +339,24 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('documentos', 'documentos', false)
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY IF NOT EXISTS "Users can upload own docs"
+DROP POLICY IF EXISTS "Users can upload own docs" ON storage.objects;
+CREATE POLICY "Users can upload own docs"
   ON storage.objects FOR INSERT
   WITH CHECK (
     bucket_id = 'documentos'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
-CREATE POLICY IF NOT EXISTS "Users can view own docs"
+DROP POLICY IF EXISTS "Users can view own docs" ON storage.objects;
+CREATE POLICY "Users can view own docs"
   ON storage.objects FOR SELECT
   USING (
     bucket_id = 'documentos'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
-CREATE POLICY IF NOT EXISTS "Users can delete own docs"
+DROP POLICY IF EXISTS "Users can delete own docs" ON storage.objects;
+CREATE POLICY "Users can delete own docs"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'documentos'
