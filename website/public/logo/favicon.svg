@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1001.01 1001.01"><rect width="1001.01" height="1001.01" rx="140" fill="#16181D"/>
+  <defs>
+    <style>
+      .st1, .st2 {
+        fill: #f3f3ef;
+      }
+
+      .st1, .st2, .st3, .st4 {
+        stroke-miterlimit: 10;
+      }
+
+      .st1 {
+        stroke-width: 43.8px;
+      }
+
+      .st1, .st2, .st3, .st4 {
+        stroke: #f3f3ef;
+      }
+
+      .st2, .st3 {
+        stroke-width: 37.54px;
+      }
+
+      .st3, .st4 {
+        fill: none;
+      }
+
+      .st4 {
+        stroke-width: 36.82px;
+      }
+    </style>
+  </defs>
+  <polyline class="st1" points="148.47 213.39 498.46 213.39 848.47 213.39"/>
+  <line class="st4" x1="496.33" y1="288.89" x2="500.5" y2="813.4"/>
+  <line class="st3" x1="170.87" y1="307.8" x2="422.83" y2="307.8"/>
+  <line class="st3" x1="403.99" y1="320.18" x2="403.99" y2="813.97"/>
+  <polyline class="st2" points="817.66 306.92 592.91 306.92 574.09 306.92"/>
+  <line class="st3" x1="595.16" y1="813.4" x2="592.95" y2="319.61"/>
+</svg>
