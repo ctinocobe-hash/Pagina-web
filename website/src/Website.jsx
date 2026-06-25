@@ -99,6 +99,7 @@ export default function Website() {
         @media (max-width: 768px) {
           .hide-mobile { display: none !important; }
           .show-mobile { display: flex !important; }
+          .logo-nav { transform: scale(0.7); }
           .hero-t { font-size: 40px !important; }
           .grid-4 { grid-template-columns: 1fr 1fr !important; }
           .grid-3 { grid-template-columns: 1fr !important; }
@@ -119,7 +120,7 @@ export default function Website() {
           transition: "all 0.4s", padding: "0 24px", height: 84,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <div style={{ cursor: "pointer" }} onClick={() => scrollTo("inicio")}>
+          <div className="logo-nav" style={{ cursor: "pointer", transformOrigin: "left center" }} onClick={() => scrollTo("inicio")}>
             <LogoHorizontal size={42} />
           </div>
           <div className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: 36 }}>
