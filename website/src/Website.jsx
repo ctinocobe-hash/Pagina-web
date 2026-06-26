@@ -53,6 +53,7 @@ export default function Website() {
   const [contactForm, setContactForm] = useState({ nombre: "", email: "", telefono: "", asunto: "", mensaje: "" });
   const [activeService, setActiveService] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [formStatus, setFormStatus] = useState("idle"); // idle | sending | success | error
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 60);
@@ -61,6 +62,34 @@ export default function Website() {
   }, []);
 
   const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (formStatus === "sending") return;
+    setFormStatus("sending");
+    try {
+      const res = await fetch("https://formspree.io/f/mjgqydry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          nombre: contactForm.nombre,
+          email: contactForm.email,
+          telefono: contactForm.telefono,
+          asunto: contactForm.asunto,
+          mensaje: contactForm.mensaje,
+          _subject: `Nuevo mensaje de ${contactForm.nombre || "la web"} — tinoco.legal`,
+        }),
+      });
+      if (res.ok) {
+        setFormStatus("success");
+        setContactForm({ nombre: "", email: "", telefono: "", asunto: "", mensaje: "" });
+      } else {
+        setFormStatus("error");
+      }
+    } catch {
+      setFormStatus("error");
+    }
+  }
 
   const services = [
     { title: "Administrativo", icon: "§", short: "Defensa frente a actos de autoridad", description: "Defendemos tus derechos frente a resoluciones arbitrarias de la administración pública. Representamos a particulares y empresas ante el Tribunal Federal de Justicia Administrativa, impugnando multas, clausuras, revocaciones de permisos, negativas de licencias y cualquier acto que vulnere tus derechos como gobernado.", items: ["Juicio contencioso administrativo", "Recursos de revisión", "Impugnación de multas y sanciones", "Negativas fictas y afirmativas fictas", "Responsabilidad patrimonial del Estado"] },
@@ -308,22 +337,35 @@ export default function Website() {
               <FadeIn>
                 <div style={{ background: SURFACE, borderRadius: 18, padding: 28, border: "1px solid rgba(164,171,179,0.08)" }}>
                   <div style={{ fontFamily: FT, fontSize: 20, fontWeight: 600, color: TEXT, marginBottom: 20 }}>Envíanos un mensaje</div>
+                  {formStatus === "success" ? (
+                    <div style={{ textAlign: "center", padding: "32px 8px" }}>
+                      <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
+                      <div style={{ fontFamily: FT, fontSize: 20, fontWeight: 600, color: TEXT, marginBottom: 8 }}>¡Gracias por escribirnos!</div>
+                      <div style={{ fontFamily: FB, fontSize: 13, color: MUTED, lineHeight: 1.6 }}>Hemos recibido tu mensaje. Te contactaremos a la brevedad.</div>
+                    </div>
+                  ) : (
+                  <form onSubmit={handleSubmit}>
                   {[
-                    { label: "Nombre", key: "nombre", type: "text", ph: "Tu nombre" },
-                    { label: "Correo", key: "email", type: "email", ph: "correo@ejemplo.com" },
-                    { label: "Teléfono", key: "telefono", type: "tel", ph: "+52 443..." },
-                    { label: "Asunto", key: "asunto", type: "text", ph: "¿En qué podemos ayudarte?" },
+                    { label: "Nombre", key: "nombre", type: "text", ph: "Tu nombre", required: true },
+                    { label: "Correo", key: "email", type: "email", ph: "correo@ejemplo.com", required: true },
+                    { label: "Teléfono", key: "telefono", type: "tel", ph: "+52 462...", required: false },
+                    { label: "Asunto", key: "asunto", type: "text", ph: "¿En qué podemos ayudarte?", required: false },
                   ].map(f => (
                     <div key={f.key} style={{ marginBottom: 14 }}>
                       <label style={{ display: "block", fontFamily: FU, fontSize: 9, letterSpacing: 1, color: MUTED, textTransform: "uppercase", marginBottom: 5 }}>{f.label}</label>
-                      <input className="inp" type={f.type} placeholder={f.ph} value={contactForm[f.key]} onChange={e => setContactForm({...contactForm, [f.key]: e.target.value})} style={{ width: "100%", padding: "11px 12px", background: "rgba(164,171,179,0.04)", border: "1px solid rgba(164,171,179,0.12)", borderRadius: 8, color: TEXT, fontSize: 13, fontFamily: FB, boxSizing: "border-box", outline: "none" }} />
+                      <input className="inp" type={f.type} required={f.required} placeholder={f.ph} value={contactForm[f.key]} onChange={e => setContactForm({...contactForm, [f.key]: e.target.value})} style={{ width: "100%", padding: "11px 12px", background: "rgba(164,171,179,0.04)", border: "1px solid rgba(164,171,179,0.12)", borderRadius: 8, color: TEXT, fontSize: 13, fontFamily: FB, boxSizing: "border-box", outline: "none" }} />
                     </div>
                   ))}
                   <div style={{ marginBottom: 18 }}>
                     <label style={{ display: "block", fontFamily: FU, fontSize: 9, letterSpacing: 1, color: MUTED, textTransform: "uppercase", marginBottom: 5 }}>Mensaje</label>
-                    <textarea className="inp" placeholder="Describe tu situación..." value={contactForm.mensaje} onChange={e => setContactForm({...contactForm, mensaje: e.target.value})} rows={3} style={{ width: "100%", padding: "11px 12px", background: "rgba(164,171,179,0.04)", border: "1px solid rgba(164,171,179,0.12)", borderRadius: 8, color: TEXT, fontSize: 13, fontFamily: FB, resize: "vertical", boxSizing: "border-box", outline: "none" }} />
+                    <textarea className="inp" required placeholder="Describe tu situación..." value={contactForm.mensaje} onChange={e => setContactForm({...contactForm, mensaje: e.target.value})} rows={3} style={{ width: "100%", padding: "11px 12px", background: "rgba(164,171,179,0.04)", border: "1px solid rgba(164,171,179,0.12)", borderRadius: 8, color: TEXT, fontSize: 13, fontFamily: FB, resize: "vertical", boxSizing: "border-box", outline: "none" }} />
                   </div>
-                  <button className="btn-p" style={{ width: "100%", padding: "13px", background: TEXT, color: BG, border: "none", borderRadius: 8, fontFamily: FB, fontSize: 14, fontWeight: 600 }}>Enviar mensaje</button>
+                  {formStatus === "error" && (
+                    <div style={{ fontFamily: FB, fontSize: 12, color: "#E08A8A", marginBottom: 12, textAlign: "center" }}>Hubo un problema al enviar. Intenta de nuevo o escríbenos a contacto@tinoco.legal.</div>
+                  )}
+                  <button type="submit" disabled={formStatus === "sending"} className="btn-p" style={{ width: "100%", padding: "13px", background: TEXT, color: BG, border: "none", borderRadius: 8, fontFamily: FB, fontSize: 14, fontWeight: 600, cursor: formStatus === "sending" ? "wait" : "pointer", opacity: formStatus === "sending" ? 0.7 : 1 }}>{formStatus === "sending" ? "Enviando..." : "Enviar mensaje"}</button>
+                  </form>
+                  )}
                 </div>
               </FadeIn>
               <FadeIn delay={0.2}>
