@@ -1,67 +1,91 @@
 import { useState, useEffect, useRef } from "react";
-// Paleta de marca TINOCO (Manual de Identidad 2026)
-const BG = "#16181D";        // Carbón Nocturno — fondo dominante
-const SURFACE = "#1C1F26";   // Superficie elevada sobre el carbón
-const GOLD = "#1D3647";      // Azul Profundo — acento/secundario (antes dorado)
-const ACCENT = "#A4ABB3";    // Gris Plata — líneas, detalles sutiles
-const SLATE = "#485769";     // Pizarra — soporte
-const TEXT = "#F3F2EF";      // Marfil Cálido — texto claro
-const MUTED = "#A4ABB3";     // Gris Plata — texto secundario
-const MUTED2 = "#6B7480";    // Pizarra atenuada — metadata
-const GRAD_HERO = `linear-gradient(135deg, ${BG} 0%, ${GOLD} 100%)`; // Carbón → Azul profundo
-const FT = "'Cormorant Garamond', serif";
-const FB = "'Cormorant Garamond', serif";
-const FU = "'DM Sans', sans-serif";
 
-const LogoIcon = ({ size = 28 }) => (
-  <img src="/logo/isotipo.svg" alt="TINOCO" width={size} height={size} style={{ display: "block" }} />
+// ─── Paleta de marca ─────────────────────────────────────────────────────────
+const DARK    = "#16181D";   // Carbón Nocturno
+const AZUL    = "#1D3647";   // Azul Profundo
+const DEEP    = "#24435A";   // Azul brillante (degradados)
+const PIZARRA = "#485769";   // Pizarra
+const PLATA   = "#A4ABB3";   // Gris Plata
+const MARFIL  = "#F3F2EF";  // Marfil Cálido
+const MUTED   = "#C7CCD2";   // texto secundario sobre oscuro
+const MUTED2  = "#7C8792";   // texto terciario
+const NEGRO   = "#101216";   // footer
+
+const SERIF = "'EB Garamond', Georgia, serif";
+const SANS  = "'Source Sans 3', system-ui, sans-serif";
+
+// ─── Isotipo inline (geometría del SVG oficial) ───────────────────────────────
+const IsotipoLines = ({ stroke = MARFIL, animated = false }) => (
+  <g>
+    <polyline points="148.47 213.39 498.46 213.39 848.47 213.39"
+      stroke={stroke} fill="none" strokeWidth="43.8" strokeLinecap="square"
+      style={animated ? { strokeDasharray: 900, strokeDashoffset: 900, animation: "draw 1.4s ease 0.1s forwards" } : {}} />
+    <line x1="496.33" y1="288.89" x2="500.5" y2="813.4"
+      stroke={stroke} fill="none" strokeWidth="36.82" strokeLinecap="square"
+      style={animated ? { strokeDasharray: 600, strokeDashoffset: 600, animation: "draw 1.4s ease 0.3s forwards" } : {}} />
+    <line x1="170.87" y1="307.8" x2="422.83" y2="307.8"
+      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
+      style={animated ? { strokeDasharray: 350, strokeDashoffset: 350, animation: "draw 1.2s ease 0.5s forwards" } : {}} />
+    <line x1="403.99" y1="320.18" x2="403.99" y2="813.97"
+      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
+      style={animated ? { strokeDasharray: 600, strokeDashoffset: 600, animation: "draw 1.4s ease 0.65s forwards" } : {}} />
+    <polyline points="817.66 306.92 592.91 306.92 574.09 306.92"
+      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
+      style={animated ? { strokeDasharray: 350, strokeDashoffset: 350, animation: "draw 1.2s ease 0.5s forwards" } : {}} />
+    <line x1="595.16" y1="813.4" x2="592.95" y2="319.61"
+      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
+      style={animated ? { strokeDasharray: 600, strokeDashoffset: 600, animation: "draw 1.4s ease 0.65s forwards" } : {}} />
+  </g>
 );
 
-const LogoHorizontal = ({ textColor = TEXT, mutedColor = MUTED, size = 30 }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: size * 0.38 }}>
-    <LogoIcon size={size} />
-    <div style={{ textAlign: "center" }}>
-      <div style={{ fontFamily: FT, fontSize: size * 0.74, fontWeight: 500, color: textColor, letterSpacing: size * 0.22, lineHeight: 1 }}>TINOCO</div>
-      <div style={{ fontFamily: FU, fontSize: size * 0.26, fontWeight: 500, color: mutedColor, letterSpacing: size * 0.16, textTransform: "uppercase", marginTop: 2 }}>FIRMA LEGAL</div>
-    </div>
-  </div>
-);
-
-const SectionDivider = () => (
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0", gap: 14 }}>
-    <div style={{ width: 50, height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }} />
-    <LogoIcon size={16} />
-    <div style={{ width: 50, height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }} />
-  </div>
-);
-
+// ─── FadeIn al entrar al viewport ────────────────────────────────────────────
 const FadeIn = ({ children, delay = 0, style = {} }) => {
   const [visible, setVisible] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.08 });
+    if (ref.current) io.observe(ref.current);
+    return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(24px)", transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`, ...style }}>{children}</div>
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(26px)",
+      transition: `opacity 0.85s cubic-bezier(.22,.61,.36,1) ${delay}s, transform 0.85s cubic-bezier(.22,.61,.36,1) ${delay}s`,
+      ...style,
+    }}>{children}</div>
   );
 };
 
+// ─── Etiqueta eyebrow ─────────────────────────────────────────────────────────
+const Eyebrow = ({ children, light = false }) => (
+  <div style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 4, color: light ? PIZARRA : PLATA, marginBottom: 0 }}>
+    {children}
+  </div>
+);
+
+// ─── Línea horizontal de contacto (usada en sección contacto) ────────────────
+const ContactRow = ({ label, value, href }) => (
+  <a href={href} style={{
+    display: "flex", justifyContent: "space-between", alignItems: "baseline",
+    padding: "26px 4px", borderBottom: `1px solid rgba(22,24,29,.16)`,
+    textDecoration: "none", color: DARK,
+  }}>
+    <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: 3, color: PIZARRA }}>{label}</span>
+    <span style={{ fontFamily: SERIF, fontSize: 24 }}>{value}</span>
+  </a>
+);
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function Website() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [formStatus, setFormStatus] = useState("idle");
   const [contactForm, setContactForm] = useState({ nombre: "", email: "", telefono: "", asunto: "", mensaje: "" });
-  const [activeService, setActiveService] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
-  const [formStatus, setFormStatus] = useState("idle"); // idle | sending | success | error
 
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", h);
-    return () => window.removeEventListener("scroll", h);
-  }, []);
-
-  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    setMenuOpen(false);
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -72,11 +96,7 @@ export default function Website() {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
-          nombre: contactForm.nombre,
-          email: contactForm.email,
-          telefono: contactForm.telefono,
-          asunto: contactForm.asunto,
-          mensaje: contactForm.mensaje,
+          ...contactForm,
           _subject: `Nuevo mensaje de ${contactForm.nombre || "la web"} — tinoco.legal`,
         }),
       });
@@ -91,349 +111,410 @@ export default function Website() {
     }
   }
 
-  const services = [
-    { title: "Administrativo", icon: "§", short: "Defensa frente a actos de autoridad", description: "Defendemos tus derechos frente a resoluciones arbitrarias de la administración pública. Representamos a particulares y empresas ante el Tribunal Federal de Justicia Administrativa, impugnando multas, clausuras, revocaciones de permisos, negativas de licencias y cualquier acto que vulnere tus derechos como gobernado.", items: ["Juicio contencioso administrativo", "Recursos de revisión", "Impugnación de multas y sanciones", "Negativas fictas y afirmativas fictas", "Responsabilidad patrimonial del Estado"] },
-    { title: "Fiscal", icon: "⚖", short: "Estrategia y defensa tributaria", description: "Protegemos tu patrimonio ante actos de la autoridad fiscal. Diseñamos estrategias de defensa frente a créditos fiscales, determinaciones del SAT y facultades de comprobación, además de brindar asesoría preventiva en el cumplimiento de tus obligaciones tributarias.", items: ["Juicio de nulidad fiscal", "Defensa en auditorías y revisiones del SAT", "Impugnación de créditos fiscales", "Devoluciones y compensaciones", "Recurso de revocación"] },
-    { title: "Aduanero", icon: "◆", short: "Comercio exterior y aduanas", description: "Asesoramos a importadores, exportadores y agentes aduanales en el cumplimiento de la normatividad de comercio exterior. Defendemos frente a procedimientos administrativos en materia aduanera (PAMA), embargos de mercancía y determinaciones de la autoridad.", items: ["Procedimiento Administrativo en Materia Aduanera (PAMA)", "Embargo precautorio de mercancías", "Clasificación arancelaria y valoración", "Regularización de mercancía", "Defensa ante el SAT y aduanas"] },
+  const areas = [
+    {
+      num: "I", title: "Derecho Administrativo",
+      desc: "Recursos y procedimientos ante la autoridad, sanciones y responsabilidades, permisos, licencias y concesiones, juicio contencioso administrativo.",
+    },
+    {
+      num: "II", title: "Derecho Fiscal",
+      desc: "Defensa frente a créditos fiscales, auditorías y facultades de comprobación, devoluciones y compensaciones, juicio de nulidad y amparo.",
+    },
+    {
+      num: "III", title: "Derecho Aduanero",
+      desc: "Procedimientos administrativos en materia aduanera, embargo y regularización de mercancías, clasificación arancelaria, multas y sanciones.",
+    },
   ];
 
-  const blogPosts = [
-    { title: "¿Qué hacer cuando la autoridad niega tu licencia?", category: "Administrativo", date: "Próximamente", excerpt: "Conoce los recursos legales disponibles cuando la autoridad administrativa niega, revoca o condiciona permisos de manera arbitraria." },
-    { title: "¿Qué hacer cuando el SAT determina un crédito fiscal?", category: "Fiscal", date: "Próximamente", excerpt: "Conoce los medios de defensa para impugnar créditos fiscales, determinaciones y multas de la autoridad tributaria antes de que queden firmes." },
-    { title: "Embargo de mercancía en la aduana: tus opciones legales", category: "Aduanero", date: "Próximamente", excerpt: "Te explicamos el Procedimiento Administrativo en Materia Aduanera (PAMA) y cómo defender tu mercancía ante un embargo precautorio." },
+  const principios = [
+    { num: "01", titulo: "RIGOR TÉCNICO", desc: "Cada escrito se construye sobre la norma, el precedente y el expediente. Nada de plantillas ni argumentos genéricos." },
+    { num: "02", titulo: "ATENCIÓN DIRECTA", desc: "Su interlocutor es el abogado que lleva el caso. Sin intermediarios, con tiempos de respuesta cortos." },
+    { num: "03", titulo: "CLARIDAD", desc: "Escenarios reales explicados en lenguaje claro, para que cada decisión se tome con información completa." },
   ];
 
-  const navItems = ["Inicio", "Servicios", "Nosotros", "Blog", "Contacto"];
+  const publicaciones = [
+    { cat: "FISCAL",        titulo: "¿Qué hacer ante una visita domiciliaria del SAT?",   extracto: "Los derechos del contribuyente durante las facultades de comprobación y los errores más comunes al atenderlas." },
+    { cat: "ADUANERO",     titulo: "Embargo de mercancías: el PAMA explicado paso a paso.", extracto: "Qué significa un procedimiento administrativo en materia aduanera, sus plazos y las vías para recuperar la mercancía." },
+    { cat: "ADMINISTRATIVO", titulo: "Multas administrativas: cuándo y cómo impugnarlas.",   extracto: "No toda sanción está debidamente fundada y motivada. Las claves para detectar actos de autoridad impugnables." },
+  ];
+
+  const navLinks = [
+    { label: "ÁREAS DE PRÁCTICA", id: "areas" },
+    { label: "LA FIRMA",          id: "firma" },
+    { label: "PUBLICACIONES",     id: "publicaciones" },
+    { label: "CONTACTO",          id: "contacto" },
+  ];
 
   return (
     <>
       <style>{`
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; overflow-x: hidden; }
-        body { background: ${BG}; color: ${TEXT}; font-family: ${FU}; overflow-x: hidden; width: 100%; }
-        ::selection { background: ${TEXT}; color: ${BG}; }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-        @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }
-        .nav-link { position: relative; cursor: pointer; transition: color 0.3s; }
-        .nav-link:hover { color: ${TEXT} !important; }
-        .nav-link::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: ${ACCENT}; transition: width 0.3s; }
-        .nav-link:hover::after { width: 100%; }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-3px); border-color: rgba(164,171,179,0.35) !important; }
-        .btn-p { transition: all 0.3s; cursor: pointer; }
-        .btn-p:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-        .btn-o { transition: all 0.3s; cursor: pointer; }
-        .btn-o:hover { background: rgba(164,171,179,0.1) !important; }
-        .inp:focus { border-color: ${ACCENT} !important; outline: none; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation: none !important; transition: none !important; }
+          [data-animate] { opacity: 1 !important; transform: none !important; }
+        }
+
+        /* Nav */
+        .nav-a { font-family:${SANS}; font-size:12px; letter-spacing:2.5px; color:${MARFIL}; text-decoration:none; cursor:pointer; transition: color .3s; }
+        .nav-a:hover { color:${PLATA}; }
+
+        /* Botón borde nav */
+        .btn-border { font-family:${SANS}; font-size:12px; letter-spacing:2.5px; color:${MARFIL}; text-decoration:none; border:1px solid rgba(164,171,179,.55); padding:14px 26px; transition: background .35s, color .35s, border-color .35s; cursor:pointer; background:transparent; }
+        .btn-border:hover { background:${MARFIL}; color:${DARK}; border-color:${MARFIL}; }
+
+        /* Botón sólido marfil */
+        .btn-solid { font-family:${SANS}; font-size:13px; letter-spacing:2.5px; color:${AZUL}; background:${MARFIL}; text-decoration:none; padding:18px 36px; display:inline-block; transition: background .35s; cursor:pointer; border:none; }
+        .btn-solid:hover { background:#DCDAD3; }
+
+        /* Botón borde hero */
+        .btn-outline { font-family:${SANS}; font-size:13px; letter-spacing:2.5px; color:${MARFIL}; border:1px solid rgba(164,171,179,.55); text-decoration:none; padding:18px 36px; display:inline-block; transition: background .35s, color .35s; cursor:pointer; background:transparent; }
+        .btn-outline:hover { background:${MARFIL}; color:${DARK}; }
+
+        /* Filas de áreas */
+        .area-row { display:grid; grid-template-columns:120px 1fr 60px; gap:32px; align-items:center; padding:44px 0; border-bottom:1px solid rgba(164,171,179,.22); transition: background .35s, padding-left .35s; cursor:default; }
+        .area-row:hover { background:rgba(36,67,90,.35); padding-left:16px; }
+
+        /* Principios */
+        .principio-col:hover { background: rgba(22,24,29,.04); }
+
+        /* Publicaciones rows */
+        .pub-row { display:grid; gap:32px; align-items:baseline; padding:38px 0; border-bottom:1px solid rgba(164,171,179,.22); text-decoration:none; color:${MARFIL}; transition: background .35s, padding-left .35s; }
+        .pub-row:hover { background:rgba(36,67,90,.4); padding-left:12px; }
+
+        /* Input */
+        .inp { width:100%; padding:12px 14px; background:rgba(22,24,29,.06); border:1px solid rgba(22,24,29,.16); color:${DARK}; font-family:${SANS}; font-size:14px; outline:none; transition: border-color .3s; }
+        .inp:focus { border-color:${PIZARRA}; }
+        .inp::placeholder { color:${PIZARRA}; opacity:.6; }
+
+        /* Mobile */
         @media (max-width: 768px) {
-          .hide-mobile { display: none !important; }
-          .show-mobile { display: flex !important; }
-          .logo-nav { transform: scale(0.7); }
-          .hero-t { font-size: 40px !important; }
-          .grid-4 { grid-template-columns: 1fr 1fr !important; }
-          .grid-3 { grid-template-columns: 1fr !important; }
-          .grid-2 { grid-template-columns: 1fr !important; }
-          .svc-detail { grid-template-columns: 1fr !important; }
-          .footer-g { grid-template-columns: 1fr 1fr !important; gap: 24px !important; }
-          .px-main { padding-left: 20px !important; padding-right: 20px !important; }
+          .hide-mobile { display:none !important; }
+          .show-mobile { display:flex !important; }
+          .hero-h1 { font-size:52px !important; }
+          .area-row { grid-template-columns:70px 1fr !important; }
+          .area-row .area-arrow { display:none; }
+          .principios-grid { grid-template-columns:1fr !important; }
+          .pub-row { grid-template-columns:1fr !important; }
+          .pub-row .pub-cat, .pub-row .pub-extr, .pub-row .pub-arrow { display:none; }
+          .contacto-grid { grid-template-columns:1fr !important; }
+          .footer-inner { flex-direction:column; gap:16px; }
+          .px { padding-left:20px !important; padding-right:20px !important; }
+        }
+        @media (min-width: 769px) {
+          .show-mobile { display:none !important; }
+          .pub-row { grid-template-columns:160px 1fr 280px 48px; }
+          .contacto-grid { grid-template-columns:1fr 1fr; }
         }
       `}</style>
-      <div style={{ background: BG, minHeight: "100vh", overflowX: "hidden", width: "100%" }}>
 
-        {/* NAVBAR */}
-        <nav style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000,
-          background: scrolled ? "rgba(22,24,29,0.95)" : "transparent",
-          backdropFilter: scrolled ? "blur(12px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(164,171,179,0.1)" : "none",
-          transition: "all 0.4s", padding: "0 24px", height: 84,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div className="logo-nav" style={{ cursor: "pointer", transformOrigin: "left center" }} onClick={() => scrollTo("inicio")}>
-            <LogoHorizontal size={42} />
-          </div>
-          <div className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: 36 }}>
-            {navItems.map(item => (
-              <span key={item} className="nav-link" onClick={() => scrollTo(item.toLowerCase())} style={{ fontFamily: FU, fontSize: 15, color: MUTED, letterSpacing: 0.5 }}>{item}</span>
-            ))}
-          </div>
-          <button className="show-mobile" onClick={() => setMenuOpen(!menuOpen)} style={{
-            display: "none", background: "none", border: "none", cursor: "pointer",
-            flexDirection: "column", gap: 5, padding: 8,
-          }}>
-            {[0,1,2].map(i => <div key={i} style={{ width: 20, height: 2, background: ACCENT, borderRadius: 1, transition: "all 0.3s", transform: menuOpen ? (i===0?"rotate(45deg) translate(5px,5px)":i===2?"rotate(-45deg) translate(5px,-5px)":"scale(0)") : "none" }} />)}
-          </button>
-          {menuOpen && <div style={{ position: "absolute", top: 84, left: 0, right: 0, background: "rgba(22,24,29,0.98)", backdropFilter: "blur(20px)", padding: "16px 24px", borderBottom: "1px solid rgba(164,171,179,0.1)" }}>
-            {navItems.map(item => (
-              <div key={item} onClick={() => scrollTo(item.toLowerCase())} style={{ padding: "14px 0", fontFamily: FU, fontSize: 16, color: MUTED, cursor: "pointer", borderBottom: "1px solid rgba(164,171,179,0.06)" }}>{item}</div>
-            ))}
-          </div>}
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <header style={{
+        position: "sticky", top: 0, zIndex: 100,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "22px 64px",
+        background: AZUL,
+        borderBottom: `1px solid rgba(164,171,179,.18)`,
+        boxShadow: "0 8px 32px rgba(0,0,0,.26)",
+      }} className="px">
+        <a href="#" onClick={e => { e.preventDefault(); scrollTo("inicio"); }} style={{ display: "block", textDecoration: "none" }}>
+          <img src="/logo/logo-horizontal.png" alt="TINOCO · Firma Legal" style={{ height: 50, width: "auto", display: "block" }} />
+        </a>
+
+        {/* Desktop nav */}
+        <nav className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: 38 }}>
+          {navLinks.map(n => (
+            <span key={n.id} className="nav-a" onClick={() => scrollTo(n.id)}>{n.label}</span>
+          ))}
+          <span className="btn-border" onClick={() => scrollTo("contacto")}>AGENDAR CONSULTA</span>
         </nav>
 
-        {/* HERO */}
-        <section id="inicio" style={{
-          minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          textAlign: "center", padding: "100px 20px 60px", position: "relative", overflow: "hidden",
-          backgroundImage: "url('/img/hero-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center",
+        {/* Mobile hamburger */}
+        <button className="show-mobile" onClick={() => setMenuOpen(!menuOpen)} style={{
+          background: "none", border: "none", cursor: "pointer",
+          flexDirection: "column", gap: 5, padding: 8,
         }}>
-          {/* Capa de color (overlay azul profundo que tiñe la imagen) */}
-          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, rgba(22,24,29,0.74) 0%, rgba(29,54,71,0.68) 100%)`, mixBlendMode: "multiply" }} />
-          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(22,24,29,0.45) 0%, rgba(22,24,29,0.2) 50%, rgba(22,24,29,0.6) 100%)` }} />
-          {/* Textura de líneas sutiles encima del overlay */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.03, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(243,242,239,0.3) 80px, rgba(243,242,239,0.3) 81px)" }} />
-          <FadeIn style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ animation: "float 6s ease-in-out infinite" }}><LogoIcon size={104} /></div>
-          </FadeIn>
-          <FadeIn delay={0.2}>
-            <h1 className="hero-t" style={{ fontFamily: FT, fontSize: 64, fontWeight: 400, color: TEXT, letterSpacing: 1, lineHeight: 1.15, marginTop: 36, maxWidth: 720, position: "relative" }}>
-              Defensa legal con experiencia y compromiso
-            </h1>
-          </FadeIn>
-          <FadeIn delay={0.4}>
-            <p style={{ fontFamily: FU, fontSize: 15, color: MUTED, lineHeight: 1.8, maxWidth: 460, marginTop: 22, position: "relative" }}>
-              Más de una década protegiendo los derechos de nuestros clientes en materia administrativa, fiscal y aduanera.
-            </p>
-          </FadeIn>
-          <FadeIn delay={0.6}>
-            <div style={{ display: "flex", gap: 14, marginTop: 34, flexWrap: "wrap", justifyContent: "center", position: "relative" }}>
-              <button className="btn-p" onClick={() => scrollTo("contacto")} style={{ padding: "13px 28px", background: TEXT, color: BG, border: "none", borderRadius: 8, fontFamily: FU, fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>Solicitar asesoría</button>
-              <button className="btn-o" onClick={() => scrollTo("servicios")} style={{ padding: "13px 28px", background: "transparent", color: TEXT, border: "1px solid rgba(243,242,239,0.25)", borderRadius: 8, fontFamily: FU, fontSize: 13 }}>Conocer servicios</button>
-            </div>
-          </FadeIn>
-          <div style={{ position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: 0.25 }}>
-            <div style={{ fontFamily: FU, fontSize: 9, letterSpacing: 2, color: MUTED }}>SCROLL</div>
-            <div style={{ width: 1, height: 24, background: `linear-gradient(to bottom, ${MUTED}, transparent)` }} />
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              width: 22, height: 2, background: MARFIL, transition: "all .3s",
+              transform: menuOpen
+                ? (i === 0 ? "rotate(45deg) translate(5px,5px)"
+                  : i === 2 ? "rotate(-45deg) translate(5px,-5px)"
+                  : "scale(0)")
+                : "none",
+            }} />
+          ))}
+        </button>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div style={{
+            position: "absolute", top: "100%", left: 0, right: 0,
+            background: "rgba(22,24,29,.97)", backdropFilter: "blur(16px)",
+            borderBottom: `1px solid rgba(164,171,179,.12)`,
+          }}>
+            {navLinks.map(n => (
+              <div key={n.id} onClick={() => scrollTo(n.id)} style={{
+                padding: "16px 24px", fontFamily: SANS, fontSize: 13, letterSpacing: 2.5,
+                color: MARFIL, cursor: "pointer", borderBottom: `1px solid rgba(164,171,179,.07)`,
+              }}>{n.label}</div>
+            ))}
+            <div onClick={() => scrollTo("contacto")} style={{
+              padding: "18px 24px", fontFamily: SANS, fontSize: 13, letterSpacing: 2.5,
+              color: MARFIL, cursor: "pointer",
+            }}>AGENDAR CONSULTA</div>
           </div>
-        </section>
+        )}
+      </header>
 
-        <SectionDivider />
+      {/* ── HERO ───────────────────────────────────────────────────────── */}
+      <section id="inicio" style={{
+        position: "relative", overflow: "hidden",
+        background: `radial-gradient(130% 100% at 50% 0%, ${DEEP} 0%, ${AZUL} 48%, ${DARK} 100%)`,
+        padding: "130px 64px 110px", textAlign: "center",
+        minHeight: "92vh", display: "flex", alignItems: "center", justifyContent: "center",
+      }} className="px">
+        {/* Marca de agua — isotipo animado */}
+        <svg viewBox="0 0 1001.01 1001.01" aria-hidden="true" style={{
+          position: "absolute", top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(900px, 88vw)", height: "auto", opacity: .1, pointerEvents: "none",
+        }}>
+          <IsotipoLines stroke={PLATA} animated />
+        </svg>
 
-        {/* SERVICIOS */}
-        <section id="servicios" className="px-main" style={{ padding: "0 24px 60px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <FadeIn>
-              <div style={{ textAlign: "center", marginBottom: 40 }}>
-                <div style={{ fontFamily: FU, fontSize: 10, letterSpacing: 4, color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>Nuestros servicios</div>
-                <h2 style={{ fontFamily: FT, fontSize: 34, fontWeight: 600, color: TEXT }}>Áreas de práctica</h2>
-                <p style={{ fontFamily: FB, fontSize: 14, color: MUTED, marginTop: 12, maxWidth: 480, margin: "12px auto 0" }}>Cada caso recibe atención personalizada y una estrategia diseñada para los mejores resultados.</p>
-              </div>
-            </FadeIn>
-            <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 32 }}>
-              {services.map((s, i) => (
-                <FadeIn key={i} delay={i * 0.1}>
-                  <div className="card-hover" onClick={() => setActiveService(i)} style={{
-                    background: activeService === i ? "rgba(164,171,179,0.06)" : SURFACE,
-                    border: `1px solid ${activeService === i ? "rgba(164,171,179,0.25)" : "rgba(255,255,255,0.04)"}`,
-                    borderRadius: 14, padding: "24px 16px", textAlign: "center", cursor: "pointer",
-                  }}>
-                    <div style={{ fontSize: 24, marginBottom: 10, opacity: activeService === i ? 1 : 0.5 }}>{s.icon}</div>
-                    <div style={{ fontFamily: FT, fontSize: 14, fontWeight: 600, color: activeService === i ? TEXT : MUTED, lineHeight: 1.3 }}>{s.title}</div>
-                    <div style={{ fontFamily: FB, fontSize: 10, color: MUTED, marginTop: 8, lineHeight: 1.4 }}>{s.short}</div>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-            <FadeIn>
-              <div className="svc-detail" style={{ background: SURFACE, borderRadius: 18, padding: "32px 28px", border: "1px solid rgba(164,171,179,0.08)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
+          data-animate>
+          <div style={{ animation: "fadeUp .9s ease both" }}>
+            <Eyebrow>ADMINISTRATIVO · FISCAL · ADUANERO</Eyebrow>
+          </div>
+          <h1 className="hero-h1" style={{
+            fontFamily: SERIF, fontWeight: 400, fontSize: 96, lineHeight: 1.1,
+            color: MARFIL, maxWidth: 980, margin: "40px 0 0",
+            animation: "fadeUp .9s ease .15s both",
+          }}>
+            Criterio frente a la autoridad.
+          </h1>
+          <p style={{
+            fontFamily: SANS, fontSize: 18, lineHeight: 1.7, fontWeight: 300,
+            color: MUTED, maxWidth: 620, margin: "34px 0 0",
+            animation: "fadeUp .9s ease .3s both",
+          }}>
+            Firma legal dedicada al derecho administrativo, fiscal y aduanero. Estudio serio de cada asunto, atención directa del abogado titular y comunicación sin rodeos.
+          </p>
+          <div style={{ display: "flex", gap: 20, marginTop: 52, flexWrap: "wrap", justifyContent: "center", animation: "fadeUp .9s ease .45s both" }}>
+            <span className="btn-solid" onClick={() => scrollTo("contacto")}>AGENDAR CONSULTA</span>
+            <span className="btn-outline" onClick={() => scrollTo("areas")}>VER ÁREAS ↓</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── ÁREAS DE PRÁCTICA ──────────────────────────────────────────── */}
+      <section id="areas" style={{ background: DARK, padding: "100px 64px" }} className="px">
+        <FadeIn>
+          <Eyebrow>ÁREAS DE PRÁCTICA</Eyebrow>
+        </FadeIn>
+        <div style={{ marginTop: 40, borderTop: `1px solid rgba(164,171,179,.22)` }}>
+          {areas.map((a, i) => (
+            <FadeIn key={i} delay={i * 0.1}>
+              <div className="area-row">
+                <span style={{ fontFamily: SERIF, fontSize: 48, color: PIZARRA, lineHeight: 1 }}>{a.num}</span>
                 <div>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>{services[activeService].icon}</div>
-                  <h3 style={{ fontFamily: FT, fontSize: 24, fontWeight: 600, color: TEXT, lineHeight: 1.2 }}>{services[activeService].title}</h3>
-                  <p style={{ fontFamily: FB, fontSize: 13, color: MUTED, lineHeight: 1.8, marginTop: 14 }}>{services[activeService].description}</p>
+                  <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 34, color: MARFIL, marginBottom: 10 }}>{a.title}</h3>
+                  <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.65, color: PLATA }}>{a.desc}</p>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <div style={{ fontFamily: FU, fontSize: 10, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", marginBottom: 14 }}>Servicios incluidos</div>
-                  {services[activeService].items.map((item, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: "1px solid rgba(164,171,179,0.06)" }}>
-                      <div style={{ width: 5, height: 5, borderRadius: 3, background: ACCENT, flexShrink: 0 }} />
-                      <span style={{ fontFamily: FB, fontSize: 12, color: TEXT }}>{item}</span>
-                    </div>
-                  ))}
-                  <button className="btn-p" onClick={() => scrollTo("contacto")} style={{ marginTop: 20, padding: "11px 22px", background: TEXT, color: BG, border: "none", borderRadius: 8, fontFamily: FB, fontSize: 12, fontWeight: 600, alignSelf: "flex-start" }}>Solicitar consulta</button>
-                </div>
+                <span className="area-arrow" style={{ fontFamily: SERIF, fontSize: 32, color: PIZARRA, textAlign: "right" }}>→</span>
               </div>
             </FadeIn>
+          ))}
+        </div>
+      </section>
+
+      {/* ── LA FIRMA ───────────────────────────────────────────────────── */}
+      <section id="firma" style={{ background: MARFIL, color: DARK, padding: "110px 64px" }} className="px">
+        <FadeIn>
+          <h2 style={{
+            fontFamily: SERIF, fontWeight: 400, fontSize: 52, lineHeight: 1.2,
+            textAlign: "center", maxWidth: 900, margin: "0 auto",
+          }}>
+            La firma se sostiene sobre tres principios.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <div className="principios-grid" style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", marginTop: 72,
+            borderTop: `1px solid rgba(22,24,29,.14)`, borderBottom: `1px solid rgba(22,24,29,.14)`,
+          }}>
+            {principios.map((p, i) => (
+              <div key={i} className="principio-col" style={{
+                padding: "48px 44px",
+                borderRight: i < 2 ? `1px solid rgba(22,24,29,.14)` : "none",
+                display: "flex", flexDirection: "column", gap: 16,
+                transition: "background .35s",
+              }}>
+                <span style={{ fontFamily: SERIF, fontSize: 30, color: PIZARRA }}>{p.num}</span>
+                <span style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 3, fontWeight: 600 }}>{p.titulo}</span>
+                <span style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.7, color: PIZARRA }}>{p.desc}</span>
+              </div>
+            ))}
           </div>
-        </section>
+        </FadeIn>
+        <FadeIn delay={0.2}>
+          <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 48, marginTop: 72 }} className="firma-sobre">
+            <div style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 4, color: PIZARRA, paddingTop: 10 }}>LA FIRMA</div>
+            <div>
+              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 42, lineHeight: 1.25, maxWidth: 820 }}>
+                Una firma deliberadamente pequeña. Cada asunto lo estudia, lo decide y lo firma la misma persona.
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginTop: 40 }}>
+                <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.75, color: PIZARRA }}>
+                  Tinoco es una firma legal dedicada al derecho administrativo, fiscal y aduanero. Trabajamos con un principio simple: ningún asunto se delega, se estandariza ni se resuelve con fórmulas. Cada expediente recibe un estudio propio y una estrategia a su medida.
+                </p>
+                <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.75, color: PIZARRA }}>
+                  Eso permite algo que las estructuras grandes difícilmente ofrecen: interlocución directa con el abogado que lleva el caso, tiempos de respuesta cortos y criterios consistentes de principio a fin.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </section>
 
-        <SectionDivider />
+      {/* ── PUBLICACIONES ──────────────────────────────────────────────── */}
+      <section id="publicaciones" style={{
+        background: `linear-gradient(150deg, ${DARK} 0%, ${AZUL} 100%)`,
+        padding: "110px 64px",
+      }} className="px">
+        <FadeIn>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+            <Eyebrow>PUBLICACIONES</Eyebrow>
+            <span style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 2.5, color: MARFIL, cursor: "pointer", borderBottom: `1px solid rgba(164,171,179,.5)`, paddingBottom: 5 }}>
+              VER TODAS →
+            </span>
+          </div>
+        </FadeIn>
+        <div style={{ marginTop: 44, borderTop: `1px solid rgba(164,171,179,.22)` }}>
+          {publicaciones.map((p, i) => (
+            <FadeIn key={i} delay={i * 0.1}>
+              <a href="#publicaciones" className="pub-row">
+                <span className="pub-cat" style={{ fontFamily: SANS, fontSize: 11, letterSpacing: 2.5, color: PLATA }}>{p.cat}</span>
+                <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 30, lineHeight: 1.25 }}>{p.titulo}</h3>
+                <span className="pub-extr" style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: PLATA }}>{p.extracto}</span>
+                <span className="pub-arrow" style={{ fontFamily: SERIF, fontSize: 28, color: PIZARRA, textAlign: "right" }}>→</span>
+              </a>
+            </FadeIn>
+          ))}
+        </div>
+      </section>
 
-        {/* NOSOTROS */}
-        <section id="nosotros" className="px-main" style={{ padding: "0 24px 60px" }}>
-          <div style={{ maxWidth: 750, margin: "0 auto", textAlign: "center" }}>
-            <FadeIn>
-              <div style={{ fontFamily: FU, fontSize: 10, letterSpacing: 4, color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>Sobre nosotros</div>
-              <h2 style={{ fontFamily: FT, fontSize: 34, fontWeight: 600, color: TEXT }}>Compromiso con la justicia</h2>
-            </FadeIn>
-            <FadeIn delay={0.2}>
-              <p style={{ fontFamily: FB, fontSize: 15, color: MUTED, lineHeight: 1.9, marginTop: 24 }}>
-                En TINOCO firma legal creemos que el acceso a una defensa jurídica competente y comprometida es un derecho fundamental. Nos dedicamos a proteger los intereses de nuestros clientes con rigor técnico, ética profesional y comunicación transparente.
+      {/* ── CONTACTO ───────────────────────────────────────────────────── */}
+      <section id="contacto" style={{ background: MARFIL, color: DARK, padding: "110px 64px" }} className="px">
+        <div className="contacto-grid" style={{ display: "grid", gap: 72, alignItems: "start", maxWidth: 1200, margin: "0 auto" }}>
+          {/* Columna izquierda — info */}
+          <FadeIn>
+            <div>
+              <Eyebrow light>CONTACTO</Eyebrow>
+              <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 56, lineHeight: 1.15, margin: "26px 0 0" }}>
+                Hablemos de su caso.
+              </h2>
+              <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.7, color: PIZARRA, margin: "24px 0 0", maxWidth: 440 }}>
+                Una consulta inicial basta para saber si podemos ayudarle y cuál sería la ruta. Toda comunicación es confidencial.
               </p>
-            </FadeIn>
-            <FadeIn delay={0.3}>
-              <p style={{ fontFamily: FB, fontSize: 15, color: MUTED, lineHeight: 1.9, marginTop: 16 }}>
-                Operamos en Guanajuato, ante el Tribunal Federal de Justicia Administrativa, autoridades fiscales y aduaneras y tribunales federales. Cada caso recibe un análisis profundo y una estrategia personalizada.
-              </p>
-            </FadeIn>
-            <FadeIn delay={0.4}>
-              <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginTop: 40 }}>
+              <div style={{ borderTop: `1px solid rgba(22,24,29,.16)`, marginTop: 40 }}>
+                <ContactRow label="TELÉFONO" value="462 252 8399" href="tel:+524622528399" />
+                <ContactRow label="CORREO" value="contacto@tinoco.legal" href="mailto:contacto@tinoco.legal" />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "26px 4px", borderBottom: `1px solid rgba(22,24,29,.16)` }}>
+                  <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: 3, color: PIZARRA }}>HORARIO</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 24 }}>Lun – Vie · 9:00 – 18:00</span>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Columna derecha — formulario */}
+          <FadeIn delay={0.15}>
+            {formStatus === "success" ? (
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <div style={{ fontFamily: SERIF, fontSize: 48, color: PIZARRA, marginBottom: 16 }}>✓</div>
+                <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 32, marginBottom: 12 }}>Mensaje recibido.</h3>
+                <p style={{ fontFamily: SANS, fontSize: 16, color: PIZARRA, lineHeight: 1.7 }}>Le contactaremos a la brevedad. Toda comunicación es confidencial.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 28, marginBottom: 28 }}>Envíenos un mensaje</h3>
                 {[
-                  { title: "Rigor técnico", desc: "Análisis exhaustivo con fundamentos jurídicos sólidos y actualizados." },
-                  { title: "Transparencia", desc: "Comunicación clara y constante sobre el avance de tu asunto." },
-                  { title: "Compromiso", desc: "Cada caso recibe la dedicación y urgencia que merece." },
-                ].map((v, i) => (
-                  <div key={i} style={{ padding: "28px 18px", background: SURFACE, borderRadius: 14, border: "1px solid rgba(164,171,179,0.06)" }}>
-                    <div style={{ width: 7, height: 7, borderRadius: 4, background: ACCENT, margin: "0 auto 14px" }} />
-                    <div style={{ fontFamily: FT, fontSize: 17, fontWeight: 600, color: TEXT, marginBottom: 8 }}>{v.title}</div>
-                    <div style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 1.6 }}>{v.desc}</div>
+                  { label: "NOMBRE", key: "nombre", type: "text", ph: "Su nombre", req: true },
+                  { label: "CORREO", key: "email",  type: "email", ph: "correo@ejemplo.com", req: true },
+                  { label: "TELÉFONO", key: "telefono", type: "tel", ph: "+52 462 ...", req: false },
+                  { label: "ASUNTO", key: "asunto", type: "text", ph: "¿En qué podemos ayudarle?", req: false },
+                ].map(f => (
+                  <div key={f.key} style={{ marginBottom: 16 }}>
+                    <label style={{ display: "block", fontFamily: SANS, fontSize: 10, letterSpacing: 2.5, color: PIZARRA, marginBottom: 6 }}>{f.label}</label>
+                    <input
+                      className="inp"
+                      type={f.type}
+                      required={f.req}
+                      placeholder={f.ph}
+                      value={contactForm[f.key]}
+                      onChange={e => setContactForm({ ...contactForm, [f.key]: e.target.value })}
+                    />
                   </div>
                 ))}
-              </div>
-            </FadeIn>
-          </div>
-        </section>
-
-        <SectionDivider />
-
-        {/* BLOG */}
-        <section id="blog" className="px-main" style={{ padding: "0 24px 60px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <FadeIn>
-              <div style={{ textAlign: "center", marginBottom: 36 }}>
-                <div style={{ fontFamily: FU, fontSize: 10, letterSpacing: 4, color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>Blog jurídico</div>
-                <h2 style={{ fontFamily: FT, fontSize: 34, fontWeight: 600, color: TEXT }}>Artículos y análisis</h2>
-              </div>
-            </FadeIn>
-            <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-              {blogPosts.map((post, i) => (
-                <FadeIn key={i} delay={i * 0.1}>
-                  <div className="card-hover" style={{ background: SURFACE, borderRadius: 14, padding: 24, border: "1px solid rgba(255,255,255,0.04)", cursor: "pointer", display: "flex", flexDirection: "column", height: "100%" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                      <span style={{ fontFamily: FU, fontSize: 10, color: ACCENT, letterSpacing: 1, textTransform: "uppercase" }}>{post.category}</span>
-                      <span style={{ fontFamily: FB, fontSize: 10, color: MUTED2 }}>{post.date}</span>
-                    </div>
-                    <h3 style={{ fontFamily: FT, fontSize: 18, fontWeight: 600, color: TEXT, lineHeight: 1.3, marginBottom: 12 }}>{post.title}</h3>
-                    <p style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 1.6, flex: 1 }}>{post.excerpt}</p>
-                    <div style={{ marginTop: 16, fontFamily: FB, fontSize: 11, color: ACCENT }}>Leer más →</div>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <SectionDivider />
-
-        {/* CONTACTO */}
-        <section id="contacto" className="px-main" style={{ padding: "0 24px 60px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <FadeIn>
-              <div style={{ textAlign: "center", marginBottom: 36 }}>
-                <div style={{ fontFamily: FU, fontSize: 10, letterSpacing: 4, color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>Contacto</div>
-                <h2 style={{ fontFamily: FT, fontSize: 34, fontWeight: 600, color: TEXT }}>Hablemos de tu caso</h2>
-                <p style={{ fontFamily: FB, fontSize: 14, color: MUTED, marginTop: 10 }}>Primera consulta sin compromiso</p>
-              </div>
-            </FadeIn>
-            <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-              <FadeIn>
-                <div style={{ background: SURFACE, borderRadius: 18, padding: 28, border: "1px solid rgba(164,171,179,0.08)" }}>
-                  <div style={{ fontFamily: FT, fontSize: 20, fontWeight: 600, color: TEXT, marginBottom: 20 }}>Envíanos un mensaje</div>
-                  {formStatus === "success" ? (
-                    <div style={{ textAlign: "center", padding: "32px 8px" }}>
-                      <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
-                      <div style={{ fontFamily: FT, fontSize: 20, fontWeight: 600, color: TEXT, marginBottom: 8 }}>¡Gracias por escribirnos!</div>
-                      <div style={{ fontFamily: FB, fontSize: 13, color: MUTED, lineHeight: 1.6 }}>Hemos recibido tu mensaje. Te contactaremos a la brevedad.</div>
-                    </div>
-                  ) : (
-                  <form onSubmit={handleSubmit}>
-                  {[
-                    { label: "Nombre", key: "nombre", type: "text", ph: "Tu nombre", required: true },
-                    { label: "Correo", key: "email", type: "email", ph: "correo@ejemplo.com", required: true },
-                    { label: "Teléfono", key: "telefono", type: "tel", ph: "+52 462...", required: false },
-                    { label: "Asunto", key: "asunto", type: "text", ph: "¿En qué podemos ayudarte?", required: false },
-                  ].map(f => (
-                    <div key={f.key} style={{ marginBottom: 14 }}>
-                      <label style={{ display: "block", fontFamily: FU, fontSize: 9, letterSpacing: 1, color: MUTED, textTransform: "uppercase", marginBottom: 5 }}>{f.label}</label>
-                      <input className="inp" type={f.type} required={f.required} placeholder={f.ph} value={contactForm[f.key]} onChange={e => setContactForm({...contactForm, [f.key]: e.target.value})} style={{ width: "100%", padding: "11px 12px", background: "rgba(164,171,179,0.04)", border: "1px solid rgba(164,171,179,0.12)", borderRadius: 8, color: TEXT, fontSize: 13, fontFamily: FB, boxSizing: "border-box", outline: "none" }} />
-                    </div>
-                  ))}
-                  <div style={{ marginBottom: 18 }}>
-                    <label style={{ display: "block", fontFamily: FU, fontSize: 9, letterSpacing: 1, color: MUTED, textTransform: "uppercase", marginBottom: 5 }}>Mensaje</label>
-                    <textarea className="inp" required placeholder="Describe tu situación..." value={contactForm.mensaje} onChange={e => setContactForm({...contactForm, mensaje: e.target.value})} rows={3} style={{ width: "100%", padding: "11px 12px", background: "rgba(164,171,179,0.04)", border: "1px solid rgba(164,171,179,0.12)", borderRadius: 8, color: TEXT, fontSize: 13, fontFamily: FB, resize: "vertical", boxSizing: "border-box", outline: "none" }} />
-                  </div>
-                  {formStatus === "error" && (
-                    <div style={{ fontFamily: FB, fontSize: 12, color: "#E08A8A", marginBottom: 12, textAlign: "center" }}>Hubo un problema al enviar. Intenta de nuevo o escríbenos a contacto@tinoco.legal.</div>
-                  )}
-                  <button type="submit" disabled={formStatus === "sending"} className="btn-p" style={{ width: "100%", padding: "13px", background: TEXT, color: BG, border: "none", borderRadius: 8, fontFamily: FB, fontSize: 14, fontWeight: 600, cursor: formStatus === "sending" ? "wait" : "pointer", opacity: formStatus === "sending" ? 0.7 : 1 }}>{formStatus === "sending" ? "Enviando..." : "Enviar mensaje"}</button>
-                  </form>
-                  )}
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ display: "block", fontFamily: SANS, fontSize: 10, letterSpacing: 2.5, color: PIZARRA, marginBottom: 6 }}>MENSAJE</label>
+                  <textarea
+                    className="inp"
+                    required
+                    rows={4}
+                    placeholder="Describa su situación..."
+                    value={contactForm.mensaje}
+                    onChange={e => setContactForm({ ...contactForm, mensaje: e.target.value })}
+                    style={{ resize: "vertical" }}
+                  />
                 </div>
-              </FadeIn>
-              <FadeIn delay={0.2}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  {[
-                    { icon: "💬", title: "WhatsApp", line1: "+52 462 252 8399", line2: "Respuesta en menos de 24h", color2: "#25D366" },
-                    { icon: "✉️", title: "Correo electrónico", line1: "contacto@tinoco.legal", color1: ACCENT },
-                    { icon: "📞", title: "Teléfono", line1: "+52 462 252 8399", line2: "Lun - Vie, 9:00 - 18:00" },
-                  ].map((c, i) => (
-                    <div key={i} style={{ background: SURFACE, borderRadius: 14, padding: 22, border: "1px solid rgba(164,171,179,0.06)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(164,171,179,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{c.icon}</div>
-                        <div>
-                          <div style={{ fontFamily: FT, fontSize: 15, fontWeight: 600, color: TEXT }}>{c.title}</div>
-                          <div style={{ fontFamily: FB, fontSize: 12, color: c.color1 || MUTED, marginTop: 2 }}>{c.line1}</div>
-                          {c.line2 && <div style={{ fontFamily: FB, fontSize: 10, color: c.color2 || MUTED2, marginTop: 3 }}>{c.line2}</div>}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div style={{ background: SURFACE, borderRadius: 14, padding: 22, border: "1px solid rgba(164,171,179,0.06)" }}>
-                    <div style={{ fontFamily: FT, fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 12 }}>Redes sociales</div>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      {["Facebook", "Instagram", "LinkedIn"].map(s => (
-                        <div key={s} style={{ padding: "7px 16px", borderRadius: 8, background: "rgba(164,171,179,0.05)", border: "1px solid rgba(164,171,179,0.1)", fontFamily: FB, fontSize: 11, color: MUTED, cursor: "pointer" }}>{s}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </FadeIn>
-            </div>
-          </div>
-        </section>
+                {formStatus === "error" && (
+                  <p style={{ fontFamily: SANS, fontSize: 13, color: "#B94A4A", marginBottom: 16 }}>
+                    Hubo un problema. Intente de nuevo o escríbanos directamente a contacto@tinoco.legal
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={formStatus === "sending"}
+                  style={{
+                    width: "100%", padding: "16px", background: DARK, color: MARFIL,
+                    border: "none", fontFamily: SANS, fontSize: 13, letterSpacing: 2.5,
+                    cursor: formStatus === "sending" ? "wait" : "pointer",
+                    opacity: formStatus === "sending" ? .7 : 1,
+                    transition: "background .3s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = AZUL}
+                  onMouseLeave={e => e.currentTarget.style.background = DARK}
+                >
+                  {formStatus === "sending" ? "ENVIANDO..." : "ENVIAR MENSAJE"}
+                </button>
+              </form>
+            )}
+          </FadeIn>
+        </div>
+      </section>
 
-        {/* FOOTER */}
-        <footer style={{ background: SURFACE, borderTop: "1px solid rgba(164,171,179,0.08)", padding: "48px 24px 28px" }}>
-          <div className="footer-g" style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 40 }}>
-            <div>
-              <LogoHorizontal size={24} />
-              <p style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 1.7, maxWidth: 260, marginTop: 14 }}>Defensa legal con experiencia y compromiso en Guanajuato.</p>
-            </div>
-            <div>
-              <div style={{ fontFamily: FU, fontSize: 9, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", marginBottom: 14 }}>Servicios</div>
-              {["Administrativo", "Fiscal", "Aduanero"].map(s => (
-                <div key={s} style={{ fontFamily: FB, fontSize: 12, color: MUTED, padding: "5px 0" }}>{s}</div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontFamily: FU, fontSize: 9, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", marginBottom: 14 }}>Navegación</div>
-              {["Inicio", "Servicios", "Nosotros", "Blog", "Contacto"].map(l => (
-                <div key={l} onClick={() => scrollTo(l.toLowerCase())} style={{ fontFamily: FB, fontSize: 12, color: MUTED, padding: "5px 0", cursor: "pointer" }}>{l}</div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontFamily: FU, fontSize: 9, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", marginBottom: 14 }}>Contacto</div>
-              <div style={{ fontFamily: FB, fontSize: 12, color: MUTED, lineHeight: 2 }}>+52 462 252 8399<br/>contacto@tinoco.legal<br/>Irapuato, Guanajuato</div>
-            </div>
+      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+      <footer style={{
+        background: NEGRO, borderTop: `1px solid rgba(164,171,179,.12)`,
+        padding: "32px 64px",
+      }} className="px">
+        <div className="footer-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <svg viewBox="0 0 1001.01 1001.01" width="24" height="24" aria-hidden="true">
+              <IsotipoLines stroke={PLATA} />
+            </svg>
+            <span style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 2, color: MUTED2 }}>© MMXXVI TINOCO · FIRMA LEGAL</span>
           </div>
-          <div style={{ borderTop: "1px solid rgba(164,171,179,0.06)", paddingTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-            <div style={{ fontFamily: FB, fontSize: 10, color: MUTED2 }}>© 2026 TINOCO firma legal. Todos los derechos reservados.</div>
-            <div style={{ display: "flex", gap: 16 }}>
-              {["Aviso de privacidad", "Términos"].map(l => (
-                <span key={l} style={{ fontFamily: FB, fontSize: 10, color: MUTED2, cursor: "pointer" }}>{l}</span>
-              ))}
-            </div>
+          <div style={{ display: "flex", gap: 32 }}>
+            <span style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 2, color: MUTED2, cursor: "pointer" }}>AVISO DE PRIVACIDAD</span>
+            <span style={{ fontFamily: SANS, fontSize: 12, letterSpacing: 2, color: MUTED2 }}>TINOCO.LEGAL</span>
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </>
   );
 }
