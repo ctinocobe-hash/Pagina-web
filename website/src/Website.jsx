@@ -14,28 +14,31 @@ const SERIF   = "'EB Garamond', Georgia, serif";
 const SANS    = "'Source Sans 3', system-ui, sans-serif";
 
 // ─── Isotipo inline ───────────────────────────────────────────────────────────
-const IsotipoLines = ({ stroke = MARFIL, animated = false }) => (
-  <g>
-    <polyline points="148.47 213.39 498.46 213.39 848.47 213.39"
-      stroke={stroke} fill="none" strokeWidth="43.8" strokeLinecap="square"
-      style={animated ? { strokeDasharray:900, strokeDashoffset:900, animation:"draw 1.4s ease 0.1s forwards" } : {}} />
-    <line x1="496.33" y1="288.89" x2="500.5" y2="813.4"
-      stroke={stroke} fill="none" strokeWidth="36.82" strokeLinecap="square"
-      style={animated ? { strokeDasharray:600, strokeDashoffset:600, animation:"draw 1.4s ease 0.3s forwards" } : {}} />
-    <line x1="170.87" y1="307.8" x2="422.83" y2="307.8"
-      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
-      style={animated ? { strokeDasharray:350, strokeDashoffset:350, animation:"draw 1.2s ease 0.5s forwards" } : {}} />
-    <line x1="403.99" y1="320.18" x2="403.99" y2="813.97"
-      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
-      style={animated ? { strokeDasharray:600, strokeDashoffset:600, animation:"draw 1.4s ease 0.65s forwards" } : {}} />
-    <polyline points="817.66 306.92 592.91 306.92 574.09 306.92"
-      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
-      style={animated ? { strokeDasharray:350, strokeDashoffset:350, animation:"draw 1.2s ease 0.5s forwards" } : {}} />
-    <line x1="595.16" y1="813.4" x2="592.95" y2="319.61"
-      stroke={stroke} fill="none" strokeWidth="37.54" strokeLinecap="square"
-      style={animated ? { strokeDasharray:600, strokeDashoffset:600, animation:"draw 1.4s ease 0.65s forwards" } : {}} />
-  </g>
-);
+// Geometría EXACTA tomada de public/logo/isotipo.svg.
+// La animación usa pathLength="1" para normalizar cada trazo: así strokeDasharray/
+// strokeDashoffset valen exactamente 1 sin importar la longitud real → dibujado
+// perfecto y sin huecos (evita que las líneas queden desalineadas).
+const IsotipoLines = ({ stroke = MARFIL, animated = false }) => {
+  const anim = (delay) => animated
+    ? { strokeDasharray:1, strokeDashoffset:1, animation:`draw 1.3s ease ${delay}s forwards` }
+    : {};
+  return (
+    <g strokeLinecap="square" strokeMiterlimit="10" fill="none">
+      <polyline points="148.47 213.39 498.46 213.39 848.47 213.39"
+        stroke={stroke} strokeWidth="43.8" pathLength="1" style={anim(0.1)} />
+      <line x1="496.33" y1="288.89" x2="500.5" y2="813.4"
+        stroke={stroke} strokeWidth="36.82" pathLength="1" style={anim(0.35)} />
+      <line x1="170.87" y1="307.8" x2="422.83" y2="307.8"
+        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.55)} />
+      <line x1="403.99" y1="320.18" x2="403.99" y2="813.97"
+        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.65)} />
+      <polyline points="817.66 306.92 592.91 306.92 574.09 306.92"
+        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.55)} />
+      <line x1="595.16" y1="813.4" x2="592.95" y2="319.61"
+        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.65)} />
+    </g>
+  );
+};
 
 // ─── FadeIn al entrar al viewport ────────────────────────────────────────────
 const FadeIn = ({ children, delay = 0, style = {} }) => {
@@ -321,20 +324,21 @@ export default function Website() {
       <section id="inicio" className="px" style={{
         position:"relative", overflow:"hidden",
         background:`radial-gradient(130% 100% at 50% 0%, ${DEEP} 0%, ${AZUL} 48%, ${DARK} 100%)`,
-        paddingTop:120, paddingBottom:100,
-        minHeight:"90vh", display:"flex", alignItems:"center", justifyContent:"center",
+        paddingTop:150, paddingBottom:130,
+        minHeight:"max(94vh, 780px)", display:"flex", alignItems:"center", justifyContent:"center",
         textAlign:"center",
       }}>
-        {/* Marca de agua — height debe ser explícito; height:auto no respeta viewBox en posición absoluta */}
+        {/* Marca de agua — width y height iguales (SVG cuadrado); tamaño reducido para caber
+            completa dentro del hero sin que overflow:hidden recorte el isotipo */}
         <svg viewBox="0 0 1001.01 1001.01" aria-hidden="true" style={{
           position:"absolute", top:"50%", left:"50%",
           transform:"translate(-50%,-50%)",
-          width:"min(860px,90vw)", height:"min(860px,90vw)", opacity:.1, pointerEvents:"none",
+          width:"min(680px,84vw)", height:"min(680px,84vw)", opacity:.1, pointerEvents:"none",
         }}>
           <IsotipoLines stroke={PLATA} animated />
         </svg>
 
-        <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", alignItems:"center", width:"100%" }}>
+        <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", alignItems:"center", width:"100%", minWidth:0, maxWidth:"100%" }}>
           <div className="hero-eyebrow" style={{ animation:"fadeUp .9s ease both" }}>
             ADMINISTRATIVO · FISCAL · ADUANERO
           </div>
