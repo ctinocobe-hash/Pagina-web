@@ -328,12 +328,12 @@ export default function Website() {
         minHeight:"max(94vh, 780px)", display:"flex", alignItems:"center", justifyContent:"center",
         textAlign:"center",
       }}>
-        {/* Marca de agua — width y height iguales (SVG cuadrado); tamaño reducido para caber
-            completa dentro del hero sin que overflow:hidden recorte el isotipo */}
+        {/* Marca de agua — anclada en la zona alta (detrás del título) para que el isotipo
+            se vea completo y los botones queden en espacio despejado debajo. */}
         <svg viewBox="0 0 1001.01 1001.01" aria-hidden="true" style={{
-          position:"absolute", top:"50%", left:"50%",
+          position:"absolute", top:"38%", left:"50%",
           transform:"translate(-50%,-50%)",
-          width:"min(680px,84vw)", height:"min(680px,84vw)", opacity:.1, pointerEvents:"none",
+          width:"min(560px,78vw)", height:"min(560px,78vw)", opacity:.12, pointerEvents:"none",
         }}>
           <IsotipoLines stroke={PLATA} animated />
         </svg>
