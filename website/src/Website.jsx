@@ -209,8 +209,8 @@ export default function Website() {
           /* Logo */
           .header-logo { height:36px !important; }
 
-          /* Hero — push content to top, size by content height */
-          #inicio { align-items:flex-start !important; min-height:auto !important; padding-top:80px !important; padding-bottom:88px !important; }
+          /* Hero — push content to top; min-height asegura que la marca de agua (351px en móvil) quede visible */
+          #inicio { align-items:flex-start !important; min-height:520px !important; padding-top:80px !important; padding-bottom:88px !important; }
           .hero-h1 { font-size:38px !important; margin:22px 0 0 !important; max-width:calc(100vw - 40px) !important; overflow-wrap:break-word !important; word-break:break-word !important; line-height:1.15 !important; }
           .hero-eyebrow { font-size:10px !important; letter-spacing:2px !important; }
           .hero-p  { font-size:16px !important; margin:20px 0 0 !important; max-width:calc(100vw - 40px) !important; }
@@ -325,11 +325,11 @@ export default function Website() {
         minHeight:"90vh", display:"flex", alignItems:"center", justifyContent:"center",
         textAlign:"center",
       }}>
-        {/* Marca de agua */}
+        {/* Marca de agua — height debe ser explícito; height:auto no respeta viewBox en posición absoluta */}
         <svg viewBox="0 0 1001.01 1001.01" aria-hidden="true" style={{
           position:"absolute", top:"50%", left:"50%",
           transform:"translate(-50%,-50%)",
-          width:"min(860px,90vw)", height:"auto", opacity:.1, pointerEvents:"none",
+          width:"min(860px,90vw)", height:"min(860px,90vw)", opacity:.1, pointerEvents:"none",
         }}>
           <IsotipoLines stroke={PLATA} animated />
         </svg>
