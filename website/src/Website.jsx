@@ -23,7 +23,10 @@ const IsotipoLines = ({ stroke = MARFIL, animated = false }) => {
     ? { strokeDasharray:1, strokeDashoffset:1, animation:`draw 1.3s ease ${delay}s forwards` }
     : {};
   return (
-    <g strokeLinecap="square" strokeMiterlimit="10" fill="none">
+    // Sin strokeLinecap (butt, como el SVG oficial): con pathLength="1" el dash
+    // mide justo la longitud del trazo, así que un remate "square" extendería
+    // AMBOS extremos y, al variar los grosores, las líneas dejarían de encajar.
+    <g strokeLinecap="butt" strokeMiterlimit="10" fill="none">
       <polyline points="148.47 213.39 498.46 213.39 848.47 213.39"
         stroke={stroke} strokeWidth="43.8" pathLength="1" style={anim(0.1)} />
       <line x1="496.33" y1="288.89" x2="500.5" y2="813.4"
@@ -131,7 +134,7 @@ export default function Website() {
         .hero-h1    { font-family:${SERIF}; font-weight:400; font-size:96px; line-height:1.1; color:${MARFIL}; width:min(980px,100%); margin:40px 0 0; overflow-wrap:break-word; }
         .hero-eyebrow { font-family:${SANS}; font-size:12px; letter-spacing:4px; color:${PLATA}; }
         .hero-p     { font-family:${SANS}; font-size:18px; line-height:1.7; font-weight:300; color:${MUTED}; width:min(620px,100%); margin:34px 0 0; }
-        .hero-btns  { display:flex; gap:20px; margin-top:52px; flex-wrap:wrap; justify-content:center; }
+        .hero-btns  { display:flex; gap:20px; margin-top:84px; flex-wrap:wrap; justify-content:center; }
 
         /* ── Titulares de sección ───────────────────────────────────── */
         .firma-main-h2    { font-family:${SERIF}; font-weight:400; font-size:52px; line-height:1.2; text-align:center; max-width:900px; margin:0 auto; color:${DARK}; }
@@ -217,7 +220,7 @@ export default function Website() {
           .hero-h1 { font-size:38px !important; margin:22px 0 0 !important; max-width:calc(100vw - 40px) !important; overflow-wrap:break-word !important; word-break:break-word !important; line-height:1.15 !important; }
           .hero-eyebrow { font-size:10px !important; letter-spacing:2px !important; }
           .hero-p  { font-size:16px !important; margin:20px 0 0 !important; max-width:calc(100vw - 40px) !important; }
-          .hero-btns { flex-direction:column !important; align-items:stretch !important; margin-top:36px !important; gap:12px !important; width:calc(100vw - 40px) !important; max-width:360px !important; }
+          .hero-btns { flex-direction:column !important; align-items:stretch !important; margin-top:56px !important; gap:12px !important; width:calc(100vw - 40px) !important; max-width:360px !important; }
           .hero-btns > * { padding:16px 20px !important; text-align:center !important; width:100% !important; box-sizing:border-box !important; }
 
           /* Titulares de sección */
