@@ -334,7 +334,7 @@ export default function Website() {
         {/* Marca de agua — anclada en la zona alta (detrás del título) para que el isotipo
             se vea completo y los botones queden en espacio despejado debajo. */}
         <svg viewBox="0 0 1001.01 1001.01" aria-hidden="true" style={{
-          position:"absolute", top:"38%", left:"50%",
+          position:"absolute", top:"46%", left:"50%",
           transform:"translate(-50%,-50%)",
           width:"min(560px,78vw)", height:"min(560px,78vw)", opacity:.12, pointerEvents:"none",
         }}>
