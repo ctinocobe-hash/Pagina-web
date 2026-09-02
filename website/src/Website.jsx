@@ -197,16 +197,16 @@ export default function Website() {
 
         <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", alignItems:"center", width:"100%", minWidth:0, maxWidth:"100%" }}>
           <div className="hero-eyebrow" style={{ animation:"fadeUp .9s ease both" }}>
-            ADMINISTRATIVO · FISCAL · ADUANERO
+            CIVIL · MERCANTIL · ADMINISTRATIVO · FISCAL · ADUANERO
           </div>
           <h1 className="hero-h1" style={{ animation:"fadeUp .9s ease .15s both" }}>
-            Criterio frente a la autoridad.
+            Estrategia legal cuando más importa.
           </h1>
           <p className="hero-p" style={{ animation:"fadeUp .9s ease .3s both" }}>
-            Firma legal en Irapuato, Guanajuato, dedicada al derecho administrativo, fiscal y aduanero. Estudio serio de cada asunto, atención directa del abogado titular y comunicación sin rodeos.
+            En Tinoco Firma Legal defendemos a personas y empresas en litigios civiles, mercantiles, administrativos, fiscales y aduaneros.
           </p>
           <div className="hero-btns" style={{ animation:"fadeUp .9s ease .45s both" }}>
-            <span className="btn-solid" onClick={() => scrollTo("contacto")}>AGENDAR CONSULTA</span>
+            <span className="btn-solid" onClick={() => scrollTo("contacto")}>CUÉNTENOS SU CASO</span>
             <span className="btn-outline" onClick={() => scrollTo("areas")}>VER ÁREAS ↓</span>
           </div>
         </div>
