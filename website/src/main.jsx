@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import Website from './Website.jsx'
+import './global.css'
 
 const root = document.getElementById('root')
 const app = (

@@ -1,81 +1,12 @@
-import { useState, useEffect, useRef } from "react";
-
-// ─── Paleta de marca ─────────────────────────────────────────────────────────
-const DARK    = "#16181D";
-const AZUL    = "#1D3647";
-const DEEP    = "#24435A";
-const PIZARRA = "#485769";
-const PLATA   = "#A4ABB3";
-const MARFIL  = "#F3F2EF";
-const MUTED   = "#C7CCD2";
-const MUTED2  = "#7C8792";
-const NEGRO   = "#101216";
-const SERIF   = "'EB Garamond', Georgia, serif";
-const SANS    = "'Source Sans 3', system-ui, sans-serif";
-
-// ─── Isotipo inline ───────────────────────────────────────────────────────────
-// Geometría EXACTA tomada de public/logo/isotipo.svg.
-// La animación usa pathLength="1" para normalizar cada trazo: así strokeDasharray/
-// strokeDashoffset valen exactamente 1 sin importar la longitud real → dibujado
-// perfecto y sin huecos (evita que las líneas queden desalineadas).
-const IsotipoLines = ({ stroke = MARFIL, animated = false }) => {
-  const anim = (delay) => animated
-    ? { strokeDasharray:1, strokeDashoffset:1, animation:`draw 1.3s ease ${delay}s forwards` }
-    : {};
-  return (
-    // Sin strokeLinecap (butt, como el SVG oficial): con pathLength="1" el dash
-    // mide justo la longitud del trazo, así que un remate "square" extendería
-    // AMBOS extremos y, al variar los grosores, las líneas dejarían de encajar.
-    <g strokeLinecap="butt" strokeMiterlimit="10" fill="none">
-      <polyline points="148.47 213.39 498.46 213.39 848.47 213.39"
-        stroke={stroke} strokeWidth="43.8" pathLength="1" style={anim(0.1)} />
-      <line x1="496.33" y1="288.89" x2="500.5" y2="813.4"
-        stroke={stroke} strokeWidth="36.82" pathLength="1" style={anim(0.35)} />
-      <line x1="170.87" y1="307.8" x2="422.83" y2="307.8"
-        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.55)} />
-      <line x1="403.99" y1="320.18" x2="403.99" y2="813.97"
-        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.65)} />
-      <polyline points="817.66 306.92 592.91 306.92 574.09 306.92"
-        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.55)} />
-      <line x1="595.16" y1="813.4" x2="592.95" y2="319.61"
-        stroke={stroke} strokeWidth="37.54" pathLength="1" style={anim(0.65)} />
-    </g>
-  );
-};
-
-// ─── FadeIn al entrar al viewport ────────────────────────────────────────────
-const FadeIn = ({ children, delay = 0, style = {} }) => {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.06 });
-    if (ref.current) io.observe(ref.current);
-    return () => io.disconnect();
-  }, []);
-  return (
-    <div ref={ref} style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? "translateY(0)" : "translateY(26px)",
-      transition: `opacity .85s cubic-bezier(.22,.61,.36,1) ${delay}s, transform .85s cubic-bezier(.22,.61,.36,1) ${delay}s`,
-      ...style,
-    }}>{children}</div>
-  );
-};
-
-const ContactRow = ({ label, value, href }) => (
-  <a href={href} className="contact-row">
-    <span className="contact-row-label">{label}</span>
-    <span className="contact-row-value">{value}</span>
-  </a>
-);
+import { useState } from "react";
+import { DARK, AZUL, DEEP, PIZARRA, PLATA, MARFIL, SERIF, SANS, IsotipoLines, FadeIn, ContactRow, Header, Footer, areas } from "./shared.jsx";
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function Website() {
-  const [menuOpen, setMenuOpen]     = useState(false);
   const [formStatus, setFormStatus] = useState("idle");
   const [contactForm, setContactForm] = useState({ nombre:"", email:"", telefono:"", asunto:"", mensaje:"" });
 
-  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior:"smooth" }); setMenuOpen(false); };
+  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior:"smooth" }); };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -92,14 +23,6 @@ export default function Website() {
     } catch { setFormStatus("error"); }
   }
 
-  const areas = [
-    { num:"I",   title:"Derecho Civil",          desc:"Litigio civil, contratos, responsabilidad civil, cobro de deudas, arrendamiento y controversias patrimoniales." },
-    { num:"II",  title:"Derecho Mercantil",      desc:"Contratos y controversias mercantiles, cobro judicial, sociedades, juicio ejecutivo mercantil y concursos mercantiles." },
-    { num:"III", title:"Derecho Administrativo", desc:"Recursos y procedimientos ante la autoridad, sanciones y responsabilidades, permisos, licencias y concesiones, juicio contencioso administrativo." },
-    { num:"IV",  title:"Derecho Fiscal",         desc:"Defensa frente a créditos fiscales, auditorías y facultades de comprobación, devoluciones y compensaciones, juicio de nulidad y amparo." },
-    { num:"V",   title:"Derecho Aduanero",       desc:"Procedimientos en materia aduanera, embargo y regularización de mercancías, clasificación arancelaria, multas y sanciones." },
-  ];
-
   const principios = [
     { num:"01", titulo:"RIGOR TÉCNICO",    desc:"Cada escrito se construye sobre la norma, el precedente y el expediente. Nada de plantillas ni argumentos genéricos." },
     { num:"02", titulo:"ATENCIÓN DIRECTA", desc:"Su interlocutor es el abogado que lleva el caso. Sin intermediarios, con tiempos de respuesta cortos." },
@@ -112,72 +35,9 @@ export default function Website() {
     { cat:"ADMINISTRATIVO",titulo:"Multas administrativas: cuándo y cómo impugnarlas.",   extracto:"No toda sanción está debidamente fundada y motivada. Las claves para detectar actos impugnables." },
   ];
 
-  const navLinks = [
-    { label:"ÁREAS DE PRÁCTICA", id:"areas" },
-    { label:"LA FIRMA",          id:"firma" },
-    { label:"PUBLICACIONES",     id:"publicaciones" },
-    { label:"CONTACTO",          id:"contacto" },
-  ];
-
   return (
     <>
-
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <header className="px" style={{
-        position:"sticky", top:0, zIndex:100,
-        display:"flex", alignItems:"center", justifyContent:"space-between",
-        paddingTop:22, paddingBottom:22,
-        background: AZUL,
-        borderBottom:`1px solid rgba(164,171,179,.18)`,
-        boxShadow:"0 8px 32px rgba(0,0,0,.26)",
-      }}>
-        <a href="#" onClick={e=>{ e.preventDefault(); scrollTo("inicio"); }} style={{ display:"block", textDecoration:"none" }}>
-          <img src="/logo/logo-horizontal.png" alt="TINOCO · Firma Legal" className="header-logo" style={{ height:50, width:"auto", display:"block" }} />
-        </a>
-
-        {/* Desktop nav */}
-        <nav className="hide-mobile" style={{ display:"flex", alignItems:"center", gap:38 }}>
-          {navLinks.map(n => (
-            <span key={n.id} className="nav-a" onClick={() => scrollTo(n.id)}>{n.label}</span>
-          ))}
-          <span className="btn-border" onClick={() => scrollTo("contacto")}>AGENDAR CONSULTA</span>
-        </nav>
-
-        {/* Hamburger */}
-        <button className="show-mobile" onClick={() => setMenuOpen(!menuOpen)} style={{
-          background:"none", border:"none", cursor:"pointer",
-          display:"flex", flexDirection:"column", gap:5, padding:8,
-        }}>
-          {[0,1,2].map(i => (
-            <div key={i} style={{
-              width:22, height:2, background:MARFIL, borderRadius:1, transition:"all .3s",
-              transform: menuOpen
-                ? (i===0?"rotate(45deg) translate(5px,5px)":i===2?"rotate(-45deg) translate(5px,-5px)":"scaleX(0)")
-                : "none",
-            }}/>
-          ))}
-        </button>
-
-        {/* Mobile drawer */}
-        {menuOpen && (
-          <div style={{
-            position:"absolute", top:"100%", left:0, right:0,
-            background:"rgba(22,24,29,.97)", backdropFilter:"blur(16px)",
-            borderBottom:`1px solid rgba(164,171,179,.12)`,
-          }}>
-            {navLinks.map(n => (
-              <div key={n.id} onClick={() => scrollTo(n.id)} style={{
-                padding:"16px 24px", fontFamily:SANS, fontSize:14, letterSpacing:2,
-                color:MARFIL, cursor:"pointer", borderBottom:`1px solid rgba(164,171,179,.07)`,
-              }}>{n.label}</div>
-            ))}
-            <div onClick={() => scrollTo("contacto")} style={{
-              padding:"18px 24px", fontFamily:SANS, fontSize:14, letterSpacing:2,
-              color:MARFIL, cursor:"pointer",
-            }}>AGENDAR CONSULTA</div>
-          </div>
-        )}
-      </header>
+      <Header isHome={true} />
 
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section id="inicio" className="px" style={{
@@ -218,18 +78,22 @@ export default function Website() {
       <section id="areas" className="px" style={{ background:DARK, paddingTop:96, paddingBottom:96 }}>
         <FadeIn>
           <div style={{ fontFamily:SANS, fontSize:12, letterSpacing:4, color:PLATA }}>ÁREAS DE PRÁCTICA</div>
+          <p className="areas-intro">
+            Cada controversia exige una estrategia distinta. Nuestro trabajo se concentra en cinco áreas desde las que analizamos los hechos, identificamos los riesgos y definimos el camino jurídico más conveniente para cada asunto.
+          </p>
         </FadeIn>
         <div style={{ marginTop:40, borderTop:`1px solid rgba(164,171,179,.22)` }}>
           {areas.map((a,i) => (
             <FadeIn key={i} delay={i*.1}>
-              <div className="area-row">
+              <a className="area-row" href={`/areas-de-practica/#${a.slug}`}>
                 <span className="area-num">{a.num}</span>
                 <div>
                   <h3 className="area-title">{a.title}</h3>
                   <p className="area-desc">{a.desc}</p>
+                  <span className="area-link">Conocer {a.title.toLowerCase()}</span>
                 </div>
                 <span className="area-arrow">→</span>
-              </div>
+              </a>
             </FadeIn>
           ))}
         </div>
@@ -368,21 +232,7 @@ export default function Website() {
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className="px" style={{ background:NEGRO, borderTop:`1px solid rgba(164,171,179,.12)`, paddingTop:32, paddingBottom:32 }}>
-        <div className="footer-inner">
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <svg viewBox="0 0 1001.01 1001.01" width="22" height="22" aria-hidden="true">
-              <IsotipoLines stroke={PLATA} />
-            </svg>
-            <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2 }}>© MMXXVI TINOCO · FIRMA LEGAL</span>
-          </div>
-          <div style={{ display:"flex", gap:28 }}>
-            <a href="/aviso-de-privacidad" style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2, textDecoration:"none" }}>AVISO DE PRIVACIDAD</a>
-            <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2 }}>TINOCO.LEGAL</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }
