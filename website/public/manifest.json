@@ -1,0 +1,11 @@
+{
+  "name": "TINOCO · Firma Legal",
+  "short_name": "TINOCO",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1D3647",
+  "theme_color": "#1D3647",
+  "icons": [
+    { "src": "/logo/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

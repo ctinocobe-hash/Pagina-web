@@ -119,154 +119,6 @@ export default function Website() {
 
   return (
     <>
-      {/* ── CSS global ─────────────────────────────────────────────────── */}
-      <style>{`
-        @keyframes draw    { to { stroke-dashoffset: 0; } }
-        @keyframes fadeUp  { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
-        @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
-
-        /* ── Sistema de padding horizontal ─────────────────────────── */
-        /* Aplicar siempre a: header, sections, footer.
-           Los paddings verticales van en el inline style de cada elemento. */
-        .px { padding-left: 64px; padding-right: 64px; }
-
-        /* ── Tipografía responsive ──────────────────────────────────── */
-        .hero-h1    { font-family:${SERIF}; font-weight:400; font-size:96px; line-height:1.1; color:${MARFIL}; width:min(980px,100%); margin:40px 0 0; overflow-wrap:break-word; }
-        .hero-eyebrow { font-family:${SANS}; font-size:12px; letter-spacing:4px; color:${PLATA}; }
-        .hero-p     { font-family:${SANS}; font-size:18px; line-height:1.7; font-weight:300; color:${MUTED}; width:min(620px,100%); margin:34px 0 0; }
-        .hero-btns  { display:flex; gap:20px; margin-top:84px; flex-wrap:wrap; justify-content:center; }
-
-        /* ── Titulares de sección ───────────────────────────────────── */
-        .firma-main-h2    { font-family:${SERIF}; font-weight:400; font-size:52px; line-height:1.2; text-align:center; max-width:900px; margin:0 auto; color:${DARK}; }
-        .contacto-info-h2 { font-family:${SERIF}; font-weight:400; font-size:56px; line-height:1.15; margin:26px 0 0; color:${DARK}; }
-
-        /* ── Botones ────────────────────────────────────────────────── */
-        .btn-border  { font-family:${SANS}; font-size:12px; letter-spacing:2.5px; color:${MARFIL}; text-decoration:none; border:1px solid rgba(164,171,179,.55); padding:14px 26px; transition:background .35s, color .35s; cursor:pointer; background:transparent; display:inline-block; }
-        .btn-border:hover  { background:${MARFIL}; color:${DARK}; }
-        .btn-solid   { font-family:${SANS}; font-size:13px; letter-spacing:2.5px; color:${AZUL}; background:${MARFIL}; text-decoration:none; padding:18px 36px; display:inline-block; transition:background .35s; cursor:pointer; border:none; text-align:center; }
-        .btn-solid:hover   { background:#DCDAD3; }
-        .btn-outline { font-family:${SANS}; font-size:13px; letter-spacing:2.5px; color:${MARFIL}; border:1px solid rgba(164,171,179,.55); text-decoration:none; padding:18px 36px; display:inline-block; transition:background .35s, color .35s; cursor:pointer; background:transparent; text-align:center; }
-        .btn-outline:hover { background:${MARFIL}; color:${DARK}; }
-
-        /* ── Nav ────────────────────────────────────────────────────── */
-        .nav-a { font-family:${SANS}; font-size:12px; letter-spacing:2.5px; color:${MARFIL}; text-decoration:none; cursor:pointer; transition:color .3s; white-space:nowrap; }
-        .nav-a:hover { color:${PLATA}; }
-
-        /* ── Áreas ──────────────────────────────────────────────────── */
-        .area-row { display:grid; grid-template-columns:120px 1fr 48px; gap:32px; align-items:center; padding:44px 0; border-bottom:1px solid rgba(164,171,179,.22); transition:background .35s, padding-left .3s; }
-        .area-row:hover { background:rgba(36,67,90,.35); padding-left:12px; }
-        .area-num   { font-family:${SERIF}; font-size:48px; color:${PIZARRA}; line-height:1; }
-        .area-title { font-family:${SERIF}; font-weight:400; font-size:34px; color:${MARFIL}; margin-bottom:10px; }
-        .area-desc  { font-family:${SANS}; font-size:15.5px; line-height:1.65; color:${PLATA}; }
-        .area-arrow { font-family:${SERIF}; font-size:30px; color:${PIZARRA}; text-align:right; }
-
-        /* ── Principios ─────────────────────────────────────────────── */
-        .principios-grid { display:grid; grid-template-columns:1fr 1fr 1fr; border-top:1px solid rgba(22,24,29,.14); border-bottom:1px solid rgba(22,24,29,.14); }
-        .principio-col { padding:48px 44px; display:flex; flex-direction:column; gap:16px; transition:background .35s; }
-        .principio-col:not(:last-child) { border-right:1px solid rgba(22,24,29,.14); }
-        .principio-num   { font-family:${SERIF}; font-size:30px; color:${PIZARRA}; }
-        .principio-titulo{ font-family:${SANS}; font-size:12px; letter-spacing:3px; font-weight:600; color:${DARK}; }
-        .principio-desc  { font-family:${SANS}; font-size:15.5px; line-height:1.7; color:${PIZARRA}; }
-
-        /* ── La Firma: bloque "sobre" ───────────────────────────────── */
-        .firma-sobre { display:grid; grid-template-columns:280px 1fr; gap:48px; margin-top:72px; }
-        .firma-label { font-family:${SANS}; font-size:12px; letter-spacing:4px; color:${PIZARRA}; padding-top:10px; }
-        .firma-h3    { font-family:${SERIF}; font-weight:400; font-size:42px; line-height:1.25; max-width:820px; color:${DARK}; }
-        .firma-cols  { display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-top:40px; }
-        .firma-p     { font-family:${SANS}; font-size:16px; line-height:1.75; color:${PIZARRA}; }
-
-        /* ── Publicaciones ──────────────────────────────────────────── */
-        .pub-row { display:grid; grid-template-columns:160px 1fr 280px 48px; gap:32px; align-items:baseline; padding:38px 0; border-bottom:1px solid rgba(164,171,179,.22); text-decoration:none; color:${MARFIL}; transition:background .35s, padding-left .3s; }
-        .pub-row:hover { background:rgba(36,67,90,.4); padding-left:12px; }
-        .pub-cat   { font-family:${SANS}; font-size:11px; letter-spacing:2.5px; color:${PLATA}; }
-        .pub-titulo{ font-family:${SERIF}; font-weight:400; font-size:28px; line-height:1.25; }
-        .pub-extr  { font-family:${SANS}; font-size:14.5px; line-height:1.6; color:${PLATA}; }
-        .pub-arrow { font-family:${SERIF}; font-size:26px; color:${PIZARRA}; text-align:right; }
-
-        /* ── Contacto ───────────────────────────────────────────────── */
-        .contacto-grid { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:start; max-width:1200px; margin:0 auto; }
-        .contact-row { display:flex; justify-content:space-between; align-items:baseline; padding:26px 4px; border-bottom:1px solid rgba(22,24,29,.16); text-decoration:none; color:${DARK}; transition:background .3s; }
-        .contact-row:hover { background:rgba(22,24,29,.04); }
-        .contact-row-label { font-family:${SANS}; font-size:11px; letter-spacing:3px; color:${PIZARRA}; }
-        .contact-row-value { font-family:${SERIF}; font-size:24px; }
-        .inp { width:100%; padding:12px 14px; background:rgba(22,24,29,.06); border:1px solid rgba(22,24,29,.16); color:${DARK}; font-family:${SANS}; font-size:14px; outline:none; transition:border-color .3s; box-sizing:border-box; }
-        .inp:focus { border-color:${PIZARRA}; }
-        .inp::placeholder { color:${PIZARRA}; opacity:.55; }
-        .form-label { display:block; font-family:${SANS}; font-size:10px; letter-spacing:2.5px; color:${PIZARRA}; margin-bottom:6px; }
-        .form-field { margin-bottom:16px; }
-        .btn-submit { width:100%; padding:16px; background:${DARK}; color:${MARFIL}; border:none; font-family:${SANS}; font-size:13px; letter-spacing:2.5px; cursor:pointer; transition:background .3s; }
-        .btn-submit:hover { background:${AZUL}; }
-        .btn-submit:disabled { opacity:.7; cursor:wait; }
-
-        /* ── Footer ─────────────────────────────────────────────────── */
-        .footer-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
-
-        /* ═══════════════════════════════════════════════════════════════
-           MOBILE  ≤ 768px
-        ════════════════════════════════════════════════════════════════*/
-        @media (max-width: 768px) {
-          /* Padding horizontal reducido */
-          .px { padding-left: 20px; padding-right: 20px; }
-
-          /* Nav */
-          .hide-mobile { display:none !important; }
-          .show-mobile { display:flex !important; }
-
-          /* Logo */
-          .header-logo { height:36px !important; }
-
-          /* Hero — push content to top; min-height asegura que la marca de agua (351px en móvil) quede visible */
-          #inicio { align-items:flex-start !important; min-height:520px !important; padding-top:80px !important; padding-bottom:88px !important; }
-          /* Isotipo un poco más arriba en móvil (escritorio se queda en top:42%) */
-          .hero-watermark { top:34% !important; }
-          .hero-h1 { font-size:38px !important; margin:22px 0 0 !important; max-width:calc(100vw - 40px) !important; overflow-wrap:break-word !important; word-break:break-word !important; line-height:1.15 !important; }
-          .hero-eyebrow { font-size:10px !important; letter-spacing:2px !important; }
-          .hero-p  { font-size:16px !important; margin:20px 0 0 !important; max-width:calc(100vw - 40px) !important; }
-          .hero-btns { flex-direction:column !important; align-items:stretch !important; margin-top:56px !important; gap:12px !important; width:calc(100vw - 40px) !important; max-width:360px !important; }
-          .hero-btns > * { padding:16px 20px !important; text-align:center !important; width:100% !important; box-sizing:border-box !important; }
-
-          /* Titulares de sección */
-          .firma-main-h2    { font-size:28px !important; }
-          .contacto-info-h2 { font-size:34px !important; margin:18px 0 0 !important; }
-
-          /* Áreas */
-          .area-row { grid-template-columns:52px 1fr !important; gap:16px !important; padding:32px 0 !important; }
-          .area-num   { font-size:34px !important; }
-          .area-title { font-size:24px !important; margin-bottom:8px !important; }
-          .area-desc  { font-size:14px !important; }
-          .area-arrow { display:none !important; }
-
-          /* Principios */
-          .principios-grid { grid-template-columns:1fr !important; }
-          .principio-col { padding:32px 24px !important; border-right:none !important; border-bottom:1px solid rgba(22,24,29,.14) !important; }
-          .principio-col:last-child { border-bottom:none !important; }
-
-          /* La Firma */
-          .firma-sobre { grid-template-columns:1fr !important; gap:24px !important; margin-top:48px !important; }
-          .firma-label { padding-top:0 !important; }
-          .firma-h3    { font-size:30px !important; }
-          .firma-cols  { grid-template-columns:1fr !important; gap:20px !important; margin-top:24px !important; }
-          .firma-p     { font-size:15px !important; }
-
-          /* Publicaciones */
-          .pub-row   { grid-template-columns:1fr !important; gap:10px !important; padding:28px 0 !important; }
-          .pub-cat   { font-size:10px !important; }
-          .pub-titulo{ font-size:22px !important; }
-          .pub-extr  { display:none !important; }
-          .pub-arrow { display:none !important; }
-
-          /* Contacto */
-          .contacto-grid { grid-template-columns:1fr !important; gap:48px !important; }
-          .contact-row-value { font-size:18px !important; }
-
-          /* Footer */
-          .footer-inner { flex-direction:column !important; align-items:flex-start !important; }
-        }
-
-        @media (min-width: 769px) {
-          .show-mobile { display:none !important; }
-        }
-      `}</style>
 
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <header className="px" style={{
@@ -351,7 +203,7 @@ export default function Website() {
             Criterio frente a la autoridad.
           </h1>
           <p className="hero-p" style={{ animation:"fadeUp .9s ease .3s both" }}>
-            Firma legal dedicada al derecho administrativo, fiscal y aduanero. Estudio serio de cada asunto, atención directa del abogado titular y comunicación sin rodeos.
+            Firma legal en Irapuato, Guanajuato, dedicada al derecho administrativo, fiscal y aduanero. Estudio serio de cada asunto, atención directa del abogado titular y comunicación sin rodeos.
           </p>
           <div className="hero-btns" style={{ animation:"fadeUp .9s ease .45s both" }}>
             <span className="btn-solid" onClick={() => scrollTo("contacto")}>AGENDAR CONSULTA</span>
@@ -371,8 +223,8 @@ export default function Website() {
               <div className="area-row">
                 <span className="area-num">{a.num}</span>
                 <div>
-                  <div className="area-title">{a.title}</div>
-                  <div className="area-desc">{a.desc}</div>
+                  <h3 className="area-title">{a.title}</h3>
+                  <p className="area-desc">{a.desc}</p>
                 </div>
                 <span className="area-arrow">→</span>
               </div>
@@ -524,7 +376,7 @@ export default function Website() {
             <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2 }}>© MMXXVI TINOCO · FIRMA LEGAL</span>
           </div>
           <div style={{ display:"flex", gap:28 }}>
-            <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2, cursor:"pointer" }}>AVISO DE PRIVACIDAD</span>
+            <a href="/aviso-de-privacidad.html" style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2, textDecoration:"none" }}>AVISO DE PRIVACIDAD</a>
             <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2 }}>TINOCO.LEGAL</span>
           </div>
         </div>
