@@ -376,7 +376,7 @@ export default function Website() {
             <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2 }}>© MMXXVI TINOCO · FIRMA LEGAL</span>
           </div>
           <div style={{ display:"flex", gap:28 }}>
-            <a href="/aviso-de-privacidad.html" style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2, textDecoration:"none" }}>AVISO DE PRIVACIDAD</a>
+            <a href="/aviso-de-privacidad" style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2, textDecoration:"none" }}>AVISO DE PRIVACIDAD</a>
             <span style={{ fontFamily:SANS, fontSize:12, letterSpacing:2, color:MUTED2 }}>TINOCO.LEGAL</span>
           </div>
         </div>
