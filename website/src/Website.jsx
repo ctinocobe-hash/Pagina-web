@@ -93,9 +93,11 @@ export default function Website() {
   }
 
   const areas = [
-    { num:"I",   title:"Derecho Administrativo", desc:"Recursos y procedimientos ante la autoridad, sanciones y responsabilidades, permisos, licencias y concesiones, juicio contencioso administrativo." },
-    { num:"II",  title:"Derecho Fiscal",         desc:"Defensa frente a créditos fiscales, auditorías y facultades de comprobación, devoluciones y compensaciones, juicio de nulidad y amparo." },
-    { num:"III", title:"Derecho Aduanero",       desc:"Procedimientos en materia aduanera, embargo y regularización de mercancías, clasificación arancelaria, multas y sanciones." },
+    { num:"I",   title:"Derecho Civil",          desc:"Litigio civil, contratos, responsabilidad civil, cobro de deudas, arrendamiento y controversias patrimoniales." },
+    { num:"II",  title:"Derecho Mercantil",      desc:"Contratos y controversias mercantiles, cobro judicial, sociedades, juicio ejecutivo mercantil y concursos mercantiles." },
+    { num:"III", title:"Derecho Administrativo", desc:"Recursos y procedimientos ante la autoridad, sanciones y responsabilidades, permisos, licencias y concesiones, juicio contencioso administrativo." },
+    { num:"IV",  title:"Derecho Fiscal",         desc:"Defensa frente a créditos fiscales, auditorías y facultades de comprobación, devoluciones y compensaciones, juicio de nulidad y amparo." },
+    { num:"V",   title:"Derecho Aduanero",       desc:"Procedimientos en materia aduanera, embargo y regularización de mercancías, clasificación arancelaria, multas y sanciones." },
   ];
 
   const principios = [
@@ -260,7 +262,7 @@ export default function Website() {
               </h3>
               <div className="firma-cols">
                 <p className="firma-p">
-                  Tinoco es una firma legal dedicada al derecho administrativo, fiscal y aduanero. Trabajamos con un principio simple: ningún asunto se delega, se estandariza ni se resuelve con fórmulas. Cada expediente recibe un estudio propio y una estrategia a su medida.
+                  Tinoco es una firma legal dedicada al derecho civil, mercantil, administrativo, fiscal y aduanero. Trabajamos con un principio simple: ningún asunto se delega, se estandariza ni se resuelve con fórmulas. Cada expediente recibe un estudio propio y una estrategia a su medida.
                 </p>
                 <p className="firma-p">
                   Eso permite algo que las estructuras grandes difícilmente ofrecen: interlocución directa con el abogado que lleva el caso, tiempos de respuesta cortos y criterios consistentes de principio a fin.
