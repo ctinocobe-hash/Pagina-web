@@ -77,7 +77,12 @@ export default function Website() {
       {/* ── ÁREAS DE PRÁCTICA ──────────────────────────────────────────── */}
       <section id="areas" className="px" style={{ background:DARK, paddingTop:96, paddingBottom:96 }}>
         <FadeIn>
-          <div style={{ fontFamily:SANS, fontSize:12, letterSpacing:4, color:PLATA }}>ÁREAS DE PRÁCTICA</div>
+          <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:24, flexWrap:"wrap" }}>
+            <div style={{ fontFamily:SANS, fontSize:12, letterSpacing:4, color:PLATA }}>ÁREAS DE PRÁCTICA</div>
+            <a href="/areas-de-practica/" style={{ fontFamily:SANS, fontSize:12, letterSpacing:2.5, color:MARFIL, textDecoration:"none", borderBottom:`1px solid rgba(164,171,179,.5)`, paddingBottom:5 }}>
+              VER TODAS →
+            </a>
+          </div>
           <p className="areas-intro">
             Cada controversia exige una estrategia distinta. Nuestro trabajo se concentra en cinco áreas desde las que analizamos los hechos, identificamos los riesgos y definimos el camino jurídico más conveniente para cada asunto.
           </p>
